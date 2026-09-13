@@ -1,0 +1,2318 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' blob: data: flashmask-local:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data: flashmask-local:; connect-src 'self'; object-src 'none'; frame-src 'none'; base-uri 'none'; form-action 'none'">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Flash Mask</title>
+<style>
+  :root {
+    color-scheme: dark;
+    --bg: #080c0f;
+    --panel: #12171b;
+    --panel-2: #171d22;
+    --line: #2b333a;
+    --line-soft: rgba(255,255,255,.09);
+    --text: #f6f7f8;
+    --muted: #9aa3ab;
+    --dim: #68727b;
+    --flash: #ffe500;
+    --flash-hover: #fff044;
+    --danger: #ff6a70;
+    --radius: 14px;
+    --control-radius: 10px;
+  }
+  * { box-sizing: border-box; }
+  html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; }
+  body { background: var(--bg); color: var(--text); font: 14px/1.5 ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+  button, textarea, input { font: inherit; }
+  button, a { -webkit-tap-highlight-color: transparent; }
+  button { color: inherit; }
+  button:focus-visible, a:focus-visible, textarea:focus-visible, .file-label:focus-visible, .canvas-scrollbar:focus-visible { outline: 2px solid rgba(255,229,0,.8); outline-offset: 2px; }
+  [hidden] { display: none !important; }
+
+  .app { width: 100%; height: 100%; padding: 4px 14px 14px; display: flex; flex-direction: column; gap: 6px; }
+  .topbar { min-height: 38px; display: flex; align-items: center; justify-content: space-between; }
+  .brand-row { display: flex; align-items: center; gap: 13px; min-width: 0; }
+  .icon { width: 1.15em; height: 1.15em; display: inline-block; flex: none; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .brand { display: flex; align-items: center; gap: 8px; font-size: 17px; font-weight: 650; letter-spacing: -.02em; white-space: nowrap; }
+  .brand-mark { width: 31px; height: 25px; display: block; }
+  .top-divider { width: 1px; height: 23px; background: var(--line); }
+  .file-label { min-height: 34px; border: 1px solid var(--line); background: var(--panel); color: var(--text); padding: 6px 10px; cursor: pointer; display: inline-flex; align-items: center; gap: 7px; border-radius: 9px; font-size: 14px; font-weight: 550; }
+  .file-label:hover { border-color: rgba(255,255,255,.22); background: var(--panel-2); }
+  #source-file { display: none; }
+  .language-toggle { min-width: 86px; min-height: 34px; border: 1px solid var(--line); border-radius: 9px; background: var(--panel); color: var(--text); padding: 6px 10px; display: inline-flex; align-items: center; justify-content: center; gap: 7px; cursor: pointer; font-size: 13px; }
+  .language-toggle:hover { border-color: rgba(255,255,255,.22); background: var(--panel-2); }
+  .language-toggle .icon { width: 17px; height: 17px; }
+
+  .layout { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(520px, 1fr) clamp(320px, 23.5vw, 350px); gap: 12px; }
+  .layout.ready { grid-template-columns: minmax(520px, 1fr) clamp(310px, 23vw, 348px); }
+  .workspace, .side-panel { min-width: 0; min-height: 0; border: 1px solid var(--line-soft); border-radius: var(--radius); background: var(--panel); overflow: hidden; }
+  .workspace { position: relative; }
+  .canvas-viewport { position: absolute; inset: 0; overflow: hidden; background: #0d1216; }
+  .canvas-viewport::before { content: ""; position: absolute; inset: 0; opacity: .38; background-image: linear-gradient(45deg,#192026 25%,transparent 25%),linear-gradient(-45deg,#192026 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#192026 75%),linear-gradient(-45deg,transparent 75%,#192026 75%); background-size: 28px 28px; background-position: 0 0,0 14px,14px -14px,-14px 0; pointer-events: none; }
+  .canvas-viewport.dragging::after { content: ""; position: absolute; inset: 2px; z-index: 10; border: 2px solid rgba(255,229,0,.72); border-radius: calc(var(--radius) - 2px); pointer-events: none; }
+  .canvas-scrollbar { position: absolute; z-index: 6; border: 1px solid rgba(255,255,255,.09); border-radius: 999px; background: rgba(255,255,255,.12); box-shadow: 0 1px 3px rgba(0,0,0,.24); }
+  .canvas-scrollbar.horizontal { left: 10px; right: 20px; bottom: 8px; height: 8px; }
+  .canvas-scrollbar.vertical { top: 10px; right: 8px; bottom: 20px; width: 8px; }
+  .canvas-scroll-thumb { position: absolute; border-radius: inherit; background: rgba(235,238,240,.7); box-shadow: 0 0 0 1px rgba(0,0,0,.28); cursor: grab; }
+  .canvas-scroll-thumb:hover { background: rgba(246,248,249,.84); }
+  .canvas-scroll-thumb:active { cursor: grabbing; background: rgba(255,255,255,.94); }
+  .canvas-scrollbar.horizontal .canvas-scroll-thumb { top: 0; bottom: 0; left: 0; }
+  .canvas-scrollbar.vertical .canvas-scroll-thumb { left: 0; right: 0; top: 0; }
+  .empty-canvas { position: absolute; inset: 0; z-index: 2; display: grid; place-items: center; border: 1px solid rgba(255,229,0,.72); border-radius: var(--radius); }
+  html.web-shell .empty-canvas { cursor: pointer; }
+  html.web-shell .empty-canvas:hover { border-color: rgba(255,229,0,.92); background: rgba(255,229,0,.03); }
+  .editor-focus[aria-pressed="true"] { border-color: rgba(255,229,0,.72); color: var(--flash); }
+  .empty-upload { position: relative; text-align: center; color: var(--muted); max-width: 420px; padding: 24px; }
+  .empty-file-icon { width: 72px; height: 82px; margin: 0 auto 22px; border-radius: 13px; background: linear-gradient(145deg,#747b84,#3d444c); opacity: .8; display: grid; place-items: center; color: #e4e7ea; }
+  .empty-file-icon .icon { width: 34px; height: 34px; stroke-width: 1.6; }
+  .empty-upload h1 { margin: 0; color: var(--text); font-size: 23px; letter-spacing: -.025em; }
+  .empty-upload p { margin: 9px 0 0; font-size: 15px; }
+  .choose-button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-width: 176px; min-height: 48px; margin-top: 22px; border: 1px solid var(--flash); border-radius: 8px; background: var(--flash); color: #111; font-size: 15px; font-weight: 700; cursor: pointer; }
+  .choose-button:hover { background: var(--flash-hover); }
+
+  #image-stage { position: absolute; z-index: 1; display: inline-block; transform-origin: top left; will-change: transform; line-height: 0; }
+  #preview { display: block; max-width: none; user-select: none; pointer-events: none; }
+  #selection-overlay { position: absolute; inset: 0; width: 100%; height: 100%; cursor: crosshair; touch-action: none; }
+  .canvas-status { position: absolute; z-index: 5; left: 50%; top: 14px; transform: translateX(-50%); max-width: calc(100% - 32px); padding: 7px 11px; border: 1px solid var(--line-soft); border-radius: 999px; background: rgba(8,12,15,.78); color: var(--muted); backdrop-filter: blur(12px); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; pointer-events: none; }
+  .canvas-status.onboarding { padding: 8px 14px; border-color: rgba(255,229,0,.46); background: rgba(8,12,15,.92); color: var(--text); font-weight: 600; }
+
+  .floating-toolbar { position: absolute; z-index: 7; left: 50%; bottom: 18px; transform: translateX(-50%); min-height: 56px; display: flex; align-items: center; gap: 4px; padding: 8px; border: 1px solid rgba(255,255,255,.16); border-radius: 18px; background: rgba(19,24,28,.94); box-shadow: 0 14px 35px rgba(0,0,0,.36); backdrop-filter: blur(14px); transition: opacity .12s ease; white-space: nowrap; }
+  .floating-toolbar.drawing { opacity: .55; }
+  .toolbar-handle { width: 32px; height: 40px; border: 0; background: transparent; color: var(--dim); cursor: grab; padding: 0 7px 0 1px; }
+  .toolbar-handle:active { cursor: grabbing; }
+  .tool-button { min-width: 40px; height: 40px; border: 0; border-radius: 10px; background: transparent; color: var(--text); cursor: pointer; padding: 0 10px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; white-space: nowrap; }
+  .tool-button:hover:not(:disabled) { background: rgba(255,255,255,.07); }
+  .tool-button:disabled { color: var(--dim); cursor: not-allowed; }
+  .tool-separator { width: 1px; height: 27px; background: var(--line); margin: 0 4px; }
+  .actual-size-button { min-width: 86px; }
+  .actual-size-button .icon { width: 22px; height: 22px; }
+  .zoom-label { min-width: 54px; text-align: center; font-variant-numeric: tabular-nums; }
+
+  .context-menu { position: absolute; z-index: 12; min-width: 132px; padding: 5px; border: 1px solid rgba(255,255,255,.14); border-radius: 10px; background: #171c20; box-shadow: 0 12px 30px rgba(0,0,0,.45); }
+  .context-menu button { width: 100%; min-height: 38px; border: 0; border-radius: 7px; background: transparent; color: var(--danger); text-align: left; cursor: pointer; }
+  .context-menu button:hover { background: rgba(255,106,112,.1); }
+
+  .side-panel { display: flex; flex-direction: column; padding: 16px; background: linear-gradient(145deg,#151b20,#11161a); }
+  .empty-guide { height: 100%; display: flex; flex-direction: column; justify-content: flex-start; padding: clamp(62px,9vh,92px) 14px 22px; }
+  .empty-guide h2 { margin: 0; max-width: 310px; font-size: clamp(30px,2.3vw,36px); line-height: 1.14; letter-spacing: -.045em; }
+  .empty-guide > p { margin: 17px 0 0; color: var(--muted); font-size: 13px; line-height: 1.6; white-space: normal; text-wrap: balance; }
+  .guide-rule { height: 1px; margin: 34px 0 38px; background: linear-gradient(90deg,rgba(255,229,0,.42),rgba(255,229,0,.06)); }
+  .guide-steps { display: flex; flex-direction: column; align-items: stretch; }
+  .guide-step { position: relative; display: grid; grid-template-columns: 44px minmax(0,1fr); align-items: center; column-gap: 14px; min-width: 0; min-height: 44px; padding-bottom: 26px; color: var(--text); font-size: 13px; line-height: 1.42; text-align: left; }
+  .guide-step:last-child { padding-bottom: 0; }
+  .guide-step:not(:last-child)::after { content: ""; position: absolute; left: 21px; top: 44px; bottom: 0; width: 1px; background: rgba(255,229,0,.26); }
+  .guide-step > [data-i18n] { display: block; min-width: 0; text-wrap: balance; }
+  html[lang="en"] .empty-guide h2 { max-width: 300px; font-size: 24px; line-height: 1.18; letter-spacing: -.03em; }
+  html[lang="en"] .empty-guide > p { margin-top: 14px; line-height: 1.5; }
+  html[lang="en"] .guide-rule { margin: 28px 0 30px; }
+  html[lang="en"] .guide-step { font-size: 13px; line-height: 1.45; }
+  .guide-icon { width: 44px; height: 44px; margin: 0; border: 1px solid rgba(255,229,0,.38); border-radius: 50%; display: grid; place-items: center; color: var(--flash); }
+  .guide-icon .icon { width: 19px; height: 19px; }
+  .guide-cases { max-width: 280px; margin-top: 32px; color: var(--text); font-size: 13px; line-height: 1.5; }
+  html[lang="en"] .guide-cases { margin-top: 28px; }
+  .guide-cases strong { color: var(--flash); }
+  .guide-cases ul { display: grid; gap: 7px; margin: 10px 0 0; padding: 0; list-style: none; }
+  .guide-cases li { position: relative; min-width: 0; padding-left: 14px; color: var(--muted); }
+  .guide-cases li::before { content: ""; position: absolute; top: .7em; left: 0; width: 5px; height: 5px; border-radius: 50%; background: var(--flash); }
+
+  .result-panel { min-height: 0; flex: 1; display: flex; flex-direction: column; }
+  .panel-heading { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+  .panel-heading h2, .prompt-title { margin: 0; font-size: 15px; font-weight: 620; }
+  .region-count { color: var(--muted); font-size: 13px; }
+  .json-shell { flex: 1; min-height: 160px; overflow-x: hidden; overflow-y: auto; scrollbar-width: thin; scrollbar-color: rgba(255,255,255,.2) transparent; border: 1px solid var(--line); border-radius: var(--control-radius); background: #11161a; }
+  .json-shell::-webkit-scrollbar { width: 6px; }
+  .json-shell::-webkit-scrollbar-track { background: transparent; }
+  .json-shell::-webkit-scrollbar-thumb { border-radius: 999px; background: rgba(255,255,255,.2); }
+  .json-shell::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,.3); }
+  #json-preview { margin: 0; padding: 14px 10px 18px 8px; color: #cfd5da; font: 12px/1.55 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; counter-reset: line; }
+  #json-preview .line { display: grid; grid-template-columns: 30px minmax(0,1fr); column-gap: 10px; min-height: 1.55em; white-space: pre-wrap; }
+  #json-preview .line::before { counter-increment: line; content: counter(line); color: #56616a; text-align: right; user-select: none; }
+  #json-preview .line-content { min-width: 0; white-space: pre-wrap; overflow-wrap: anywhere; word-break: break-word; }
+  #json-preview .key { color: #f0c99a; } #json-preview .string { color: #d6a97b; } #json-preview .number, #json-preview .boolean { color: #e9d94d; } #json-preview .null { color: #8f98a1; }
+  #json-output { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); }
+  .empty-json { display: block; padding: 42px 18px; color: var(--muted); line-height: 1.6; text-align: center; white-space: normal; }
+  .task-actions { padding-top: 16px; }
+  .prompt-title { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 9px; }
+  .prompt-optional { flex: none; padding: 2px 7px; border: 1px solid var(--line); border-radius: 999px; background: #181e23; color: var(--muted); font-size: 11px; font-weight: 560; line-height: 1.4; }
+  #prompt-input { width: 100%; height: 94px; resize: none; border: 1px solid var(--line); border-radius: var(--control-radius); background: #11161a; color: var(--text); padding: 11px 12px 24px; outline: none; }
+  #prompt-input:focus { border-color: #9d9561; }
+  .prompt-wrap { position: relative; }
+  .prompt-count { position: absolute; right: 10px; bottom: 7px; color: var(--muted); font-size: 12px; }
+  .result-button { width: 100%; min-height: 48px; margin-top: 12px; border-radius: var(--control-radius); cursor: pointer; font-weight: 650; display: flex; align-items: center; justify-content: center; gap: 8px; }
+  #copy-json { border: 1px solid var(--flash); background: var(--flash); color: #111; }
+  #copy-json:hover:not(:disabled) { background: var(--flash-hover); }
+  #download-mask { display: flex; align-items: center; justify-content: center; border: 1px solid var(--line); background: transparent; color: var(--text); text-decoration: none; }
+  #copy-json:disabled, #download-mask.disabled { opacity: .34; cursor: not-allowed; pointer-events: none; }
+
+  @media (max-width: 1050px) {
+    .app { padding: 10px; }
+    .layout { grid-template-columns: minmax(420px,1fr) 286px; gap: 8px; }
+    .layout.ready { grid-template-columns: minmax(420px,1fr) 286px; }
+    .brand-row { gap: 8px; }
+    .side-panel { padding: 14px; }
+    .empty-guide { padding: 54px 10px 16px; }
+    .empty-guide h2 { font-size: 28px; }
+    .guide-step { font-size: 11px; }
+    .guide-rule { margin: 26px 0 30px; }
+    .guide-cases { margin-top: 26px; }
+  }
+  @media (max-height: 600px) {
+    .app { padding-top: 6px; gap: 6px; }
+    .topbar { min-height: 36px; }
+    .side-panel { padding: 10px; }
+    .panel-heading { margin-bottom: 5px; }
+    .json-shell { min-height: 76px; }
+    #json-preview { padding-top: 8px; }
+    .task-actions { padding-top: 8px; }
+    .prompt-title { margin-bottom: 5px; }
+    #prompt-input { height: 58px; }
+    .result-button { min-height: 38px; margin-top: 7px; }
+  }
+</style>
+</head>
+<body>
+<svg hidden aria-hidden="true">
+<!-- Lucide / Feather icons: https://github.com/lucide-icons/lucide
+ISC License
+
+Copyright (c) 2026 Lucide Icons and Contributors
+
+Permission to use, copy, modify, and/or distribute this software for any
+purpose with or without fee is hereby granted, provided that the above
+copyright notice and this permission notice appear in all copies.
+
+THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+
+
+The following Lucide icons are derived from the Feather project:
+
+airplay, alert-circle, alert-octagon, alert-triangle, aperture, arrow-down-circle, arrow-down-left, arrow-down-right, arrow-down, arrow-left-circle, arrow-left, arrow-right-circle, arrow-right, arrow-up-circle, arrow-up-left, arrow-up-right, arrow-up, at-sign, calendar, cast, check, chevron-down, chevron-left, chevron-right, chevron-up, chevrons-down, chevrons-left, chevrons-right, chevrons-up, circle, clipboard, clock, code, columns, command, compass, corner-down-left, corner-down-right, corner-left-down, corner-left-up, corner-right-down, corner-right-up, corner-up-left, corner-up-right, crosshair, database, divide-circle, divide-square, dollar-sign, download, external-link, feather, frown, hash, headphones, help-circle, info, italic, key, layout, life-buoy, link-2, link, loader, lock, log-in, log-out, maximize, meh, minimize, minimize-2, minus-circle, minus-square, minus, monitor, moon, more-horizontal, more-vertical, move, music, navigation-2, navigation, octagon, pause-circle, percent, plus-circle, plus-square, plus, power, radio, rss, search, server, share, shopping-bag, sidebar, smartphone, smile, square, table-2, tablet, target, terminal, trash-2, trash, triangle, tv, type, upload, x-circle, x-octagon, x-square, x, zoom-in, zoom-out
+
+The MIT License (MIT) (for the icons listed above)
+
+Copyright (c) 2013-present Cole Bemis
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+-->
+  <symbol id="i-image-up" viewBox="0 0 24 24"><path d="M10.3 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v10l-3.1-3.1a2 2 0 0 0-2.814.014L6 21"/><path d="m14 19.5 3-3 3 3M17 22v-5.5"/><circle cx="9" cy="9" r="2"/></symbol>
+  <!-- Microsoft Fluent UI System Icons: https://github.com/microsoft/fluentui-system-icons
+MIT License
+
+Copyright (c) 2020 Microsoft Corporation
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+  -->
+  <symbol id="i-zoom-one" viewBox="0 0 20 20"><path fill="currentColor" stroke="none" d="M6.763 7.075A.5.5 0 0 1 7 7.5v5a.5.5 0 0 1-1 0V8.309l-.276.138a.5.5 0 1 1-.448-.894l1-.5a.5.5 0 0 1 .487.022M14 7.5a.5.5 0 0 0-.724-.447l-1 .5a.5.5 0 1 0 .448.894L13 8.31v4.19a.5.5 0 0 0 1 0zm-4 1a.5.5 0 1 1-1 0a.5.5 0 0 1 1 0M9.5 12a.5.5 0 1 0 0-1a.5.5 0 0 0 0 1M2 6.75A2.75 2.75 0 0 1 4.75 4h10.5A2.75 2.75 0 0 1 18 6.75v6.5A2.75 2.75 0 0 1 15.25 16H4.75A2.75 2.75 0 0 1 2 13.25zM4.75 5A1.75 1.75 0 0 0 3 6.75v6.5c0 .966.784 1.75 1.75 1.75h10.5A1.75 1.75 0 0 0 17 13.25v-6.5A1.75 1.75 0 0 0 15.25 5z"/></symbol>
+  <symbol id="i-file-image" viewBox="0 0 24 24"><path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2zM14 2v5a1 1 0 0 0 1 1h5"/><circle cx="10" cy="12" r="2"/><path d="m20 17-1.296-1.296a2.41 2.41 0 0 0-3.408 0L9 22"/></symbol>
+  <symbol id="i-folder" viewBox="0 0 24 24"><path d="m6 14 1.5-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.54 6a2 2 0 0 1-1.95 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H18a2 2 0 0 1 2 2v2"/></symbol>
+  <symbol id="i-scan" viewBox="0 0 24 24"><path d="M3 7V5a2 2 0 0 1 2-2h2m10 0h2a2 2 0 0 1 2 2v2m0 10v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2m4-5h10"/></symbol>
+  <symbol id="i-grip" viewBox="0 0 24 24"><circle cx="9" cy="5" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="19" r="1"/></symbol>
+  <symbol id="i-undo" viewBox="0 0 24 24"><path d="M9 14 4 9l5-5M4 9h10.5a5.5 5.5 0 1 1 0 11H11"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24"><path d="M10 11v6m4-6v6m5-11v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></symbol>
+  <symbol id="i-focus" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M3 7V5a2 2 0 0 1 2-2h2m10 0h2a2 2 0 0 1 2 2v2m0 10v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24"><rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></symbol>
+  <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 15V3m9 12v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4m4-5 5 5 5-5"/></symbol>
+  <symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M5 12h14m-7-7v14"/></symbol>
+  <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a15 15 0 0 1 0 18M12 3a15 15 0 0 0 0 18"/></symbol>
+</svg>
+<main class="app">
+  <header class="topbar">
+    <div class="brand-row">
+      <div class="brand"><img class="brand-mark" src="assets/FlashMask-Mark.svg" alt="" aria-hidden="true"><span>Flash Mask</span></div>
+      <span class="top-divider"></span>
+      <label class="file-label" for="source-file" role="button" tabindex="0"><svg class="icon"><use href="#i-image-up"/></svg><span data-i18n="changeImage">打开图片</span></label>
+      <input id="source-file" type="file" accept="image/png,image/jpeg,image/webp">
+    </div>
+    <button id="language-toggle" class="language-toggle" type="button" hidden><svg class="icon"><use href="#i-globe"/></svg><span>English</span></button>
+  </header>
+
+  <div class="layout">
+    <section class="workspace" id="workspace">
+      <div class="canvas-viewport" id="canvas-viewport">
+        <div class="empty-canvas" id="empty-canvas">
+          <div class="empty-upload">
+            <div class="empty-file-icon"><svg class="icon"><use href="#i-file-image"/></svg></div>
+            <h1 data-i18n="dropTitle">拖入图片，或打开图片</h1>
+            <p data-i18n="fileFormats">PNG、JPG、JPEG、WebP</p>
+            <label class="choose-button" for="source-file" role="button" tabindex="0"><svg class="icon"><use href="#i-folder"/></svg><span data-i18n="chooseImage">打开图片</span></label>
+          </div>
+        </div>
+        <div id="image-stage" hidden>
+          <img id="preview" alt="导入图片预览" draggable="false">
+          <canvas id="selection-overlay" aria-label="图片圈选区域"></canvas>
+        </div>
+        <div id="canvas-scrollbar-x" class="canvas-scrollbar horizontal" role="scrollbar" tabindex="0" aria-label="水平移动图片" aria-orientation="horizontal" aria-controls="image-stage" hidden><span class="canvas-scroll-thumb"></span></div>
+        <div id="canvas-scrollbar-y" class="canvas-scrollbar vertical" role="scrollbar" tabindex="0" aria-label="垂直移动图片" aria-orientation="vertical" aria-controls="image-stage" hidden><span class="canvas-scroll-thumb"></span></div>
+      </div>
+      <p id="status" class="canvas-status">选择图片后生成 JSON 和黑白蒙版。</p>
+      <div id="floating-toolbar" class="floating-toolbar" hidden>
+        <button id="toolbar-handle" class="toolbar-handle" type="button" aria-label="移动控制栏"><svg class="icon"><use href="#i-grip"/></svg></button>
+        <button id="undo-action" class="tool-button" type="button"><svg class="icon"><use href="#i-undo"/></svg> <span data-i18n="undo">撤销</span></button>
+        <button id="clear-action" class="tool-button" type="button"><svg class="icon"><use href="#i-trash"/></svg> <span data-i18n="clear">清空</span></button>
+        <button id="editor-focus" class="tool-button editor-focus" type="button" hidden aria-pressed="false"><span data-i18n="focusEditor">专注编辑</span></button>
+        <span class="tool-separator"></span>
+        <button id="fit-action" class="tool-button" type="button"><svg class="icon"><use href="#i-focus"/></svg> <span data-i18n="fit">适应</span></button>
+        <button id="actual-size-action" class="tool-button actual-size-button" type="button"><svg class="icon"><use href="#i-zoom-one"/></svg> <span data-i18n="actualSize">原尺寸</span></button>
+        <span class="tool-separator"></span>
+        <button id="zoom-out" class="tool-button" type="button" aria-label="缩小"><svg class="icon"><use href="#i-minus"/></svg></button>
+        <span id="zoom-label" class="zoom-label">100%</span>
+        <button id="zoom-in" class="tool-button" type="button" aria-label="放大"><svg class="icon"><use href="#i-plus"/></svg></button>
+      </div>
+      <div id="region-menu" class="context-menu" hidden><button id="delete-region-action" type="button"><svg class="icon"><use href="#i-trash"/></svg> <span data-i18n="deleteRegion">删除区域</span></button></div>
+    </section>
+
+    <aside class="side-panel">
+      <section id="empty-guide" class="empty-guide">
+        <h2 data-i18n="guideTitle">你圈一下，<br>剩下交给Agent</h2>
+        <p data-i18n="guideSubtitle">告别Photoshop，<br>把图片修改和蒙版处理交给AI</p>
+        <div class="guide-rule"></div>
+        <div class="guide-steps">
+          <div class="guide-step"><span class="guide-icon"><svg class="icon"><use href="#i-image-up"/></svg></span><span data-i18n="stepImport">拖入图片</span></div>
+          <div class="guide-step"><span class="guide-icon"><svg class="icon"><use href="#i-scan"/></svg></span><span data-i18n="stepCircle">圈出要改的地方</span></div>
+          <div class="guide-step"><span class="guide-icon"><svg class="icon"><use href="#i-copy"/></svg></span><span data-i18n="stepSend">复制数据发给Agent</span></div>
+        </div>
+        <div class="guide-cases"><strong data-i18n="guideUse">适合：</strong><ul>
+          <li data-i18n="guideCaseReplace">替换局部</li>
+          <li data-i18n="guideCaseDetail">修改细节</li>
+          <li data-i18n="guideCaseRemove">消除区域</li>
+        </ul></div>
+      </section>
+
+      <section id="result-panel" class="result-panel" hidden>
+        <div class="panel-heading"><h2 data-i18n="jsonPreview">JSON 预览</h2><span id="region-count" class="region-count">0 个区域</span></div>
+        <div class="json-shell"><pre id="json-preview"><span class="empty-json">圈出区域后，这里会生成可交给 Agent 的数据</span></pre></div>
+        <textarea id="json-output" readonly tabindex="-1" aria-label="Flash Mask JSON"></textarea>
+        <div class="task-actions">
+          <div class="prompt-title"><span data-i18n="promptTitle">想让 Agent 做什么？</span><span class="prompt-optional" data-i18n="promptOptional">可选</span></div>
+          <div class="prompt-wrap"><textarea id="prompt-input" placeholder="例如：&#10;保留山体，去掉天空中的云。"></textarea><span id="prompt-count" class="prompt-count">0</span></div>
+          <button id="copy-json" class="result-button" type="button" disabled><svg class="icon"><use href="#i-copy"/></svg> <span data-i18n="copyJson">复制 JSON</span></button>
+          <a id="download-mask" class="result-button disabled" hidden><svg class="icon"><use href="#i-download"/></svg> <span data-i18n="exportMask">导出黑白蒙版 PNG</span></a>
+        </div>
+      </section>
+    </aside>
+  </div>
+</main>
+<script src="src/flash-mask-contract.js"></script>
+<script src="src/selection-lasso-cleaner.js"></script>
+<script>
+  (() => {
+    'use strict';
+
+    const contract = window.FlashMaskContract;
+    const selectionCleaner = window.FlashMaskSelectionCleaner;
+    const fileInput = document.querySelector('#source-file');
+    const changeImageLabel = document.querySelector('[data-i18n="changeImage"]');
+    const imageStage = document.querySelector('#image-stage');
+    const preview = document.querySelector('#preview');
+    const selectionOverlay = document.querySelector('#selection-overlay');
+    const status = document.querySelector('#status');
+    const jsonOutput = document.querySelector('#json-output');
+    const copyButton = document.querySelector('#copy-json');
+    const download = document.querySelector('#download-mask');
+    const workspace = document.querySelector('#workspace');
+    const layout = document.querySelector('.layout');
+    const canvasViewport = document.querySelector('#canvas-viewport');
+    const emptyCanvas = document.querySelector('#empty-canvas');
+    const emptyGuide = document.querySelector('#empty-guide');
+    const resultPanel = document.querySelector('#result-panel');
+    const jsonPreview = document.querySelector('#json-preview');
+    const promptInput = document.querySelector('#prompt-input');
+    const promptCount = document.querySelector('#prompt-count');
+    const regionCount = document.querySelector('#region-count');
+    const languageToggle = document.querySelector('#language-toggle');
+    const focusButton = document.querySelector('#editor-focus');
+    const dropTitle = emptyCanvas.querySelector('[data-i18n="dropTitle"]');
+    const webShell = window.__flashMaskRequireWebAdapter === true;
+    if (webShell) document.documentElement.classList.add('web-shell');
+    const toolbar = document.querySelector('#floating-toolbar');
+    const undoButton = document.querySelector('#undo-action');
+    const clearButton = document.querySelector('#clear-action');
+    const fitButton = document.querySelector('#fit-action');
+    const actualSizeButton = document.querySelector('#actual-size-action');
+    const zoomOutButton = document.querySelector('#zoom-out');
+    const zoomInButton = document.querySelector('#zoom-in');
+    const zoomLabel = document.querySelector('#zoom-label');
+    const horizontalScrollbar = document.querySelector('#canvas-scrollbar-x');
+    const verticalScrollbar = document.querySelector('#canvas-scrollbar-y');
+    const horizontalScrollThumb = horizontalScrollbar.querySelector('.canvas-scroll-thumb');
+    const verticalScrollThumb = verticalScrollbar.querySelector('.canvas-scroll-thumb');
+    const toolbarHandle = document.querySelector('#toolbar-handle');
+    const regionMenu = document.querySelector('#region-menu');
+    const deleteRegionButton = document.querySelector('#delete-region-action');
+    const bridge = () => window.webkit?.messageHandlers?.flashMaskBridge;
+    const webAdapter = () => window.FlashMaskWebAdapter;
+    const nativePathTimeoutMilliseconds = 1000;
+    const edgeHitRadiusCss = 4;
+    const supportedImageTypes = new Set(['image/png', 'image/jpeg', 'image/webp']);
+    // ponytail: this limits only live pointer collection work; never truncate and emit a partial JSON.
+    const maxCapturedSelectionPoints = 4096;
+    const state = {
+      task: null,
+      output: null,
+      selection: null,
+      regions: [],
+      selectedRegion: -1,
+      selectedNode: -1,
+      interaction: null,
+      history: [],
+      viewport: { zoom: 1, x: 0, y: 0 },
+      toolbarPosition: null,
+      scrollbarDrag: null,
+      spaceDown: false,
+      language: window.__flashMaskInitialLanguage ?? (navigator.language?.toLowerCase().startsWith('zh') ? 'zh' : 'en'),
+      downloadUrl: null,
+      ignoredPathResponses: 0,
+      pathRequestNonce: null,
+      acceptedPathResponseNonce: null,
+      lastIgnoredPathResponseNonce: null,
+      pendingNativeCopies: new Map(),
+      copyMethod: null,
+      notice: null,
+      pendingImport: null
+    };
+    const regionEdgeIndexCache = new WeakMap();
+    let renderedJson = null;
+    let lastCanvasSize = null;
+    let pendingMaskKeyboardExecution = null;
+    let editorFocused = false;
+    let emptyCanvasHovered = false;
+
+    function beginResultExecution(action, event) {
+      const adapter = webAdapter();
+      if (!adapter) return window.__flashMaskRequireWebAdapter === true
+        ? { allowed: false }
+        : { allowed: true, adapter: null, ticket: null };
+      if (typeof adapter.beginResult !== 'function' || typeof adapter.finishResult !== 'function') return { allowed: false };
+      try {
+        const ticket = adapter.beginResult(action, event?.isTrusted === true);
+        return ticket?.allowed === true ? { allowed: true, adapter, ticket } : { allowed: false };
+      } catch (error) {
+        console.error('Flash Mask web result adapter failed to authorize.', error);
+        return { allowed: false };
+      }
+    }
+
+    function finishResultExecution(execution, outcome) {
+      if (!execution?.adapter) return true;
+      try { return execution.adapter.finishResult(execution.ticket, outcome) === true; }
+      catch (error) {
+        console.error('Flash Mask web result adapter failed to finish.', error);
+        return false;
+      }
+    }
+
+    function notifyWebTaskStarted(task) {
+      pendingMaskKeyboardExecution = null;
+      const adapter = webAdapter();
+      if (task?.platform !== 'web' || typeof adapter?.taskStarted !== 'function') return;
+      try { adapter.taskStarted(); }
+      catch (error) { console.error('Flash Mask web result adapter failed to start a task.', error); }
+    }
+
+    const messages = {
+      zh: {
+        emptyJson: '圈出区域后，这里会生成可交给 Agent 的数据', chooseToGenerate: '选择图片后生成 JSON 和黑白蒙版。', decodeFailed: '图片无法解码。',
+        importPreserved: '无法打开这张图片，已保留当前任务。', pathFailed: '无法取得真实路径，请重新导入。', pathPending: '正在取得真实本地路径。',
+        outputReady: 'JSON 和黑白蒙版已就绪。', drawing: '正在圈选区域。', tooLong: '圈选轨迹过长，请重新圈选。', invalid: '圈选无效，请重新圈选。',
+        continue: '继续圈选可增加区域；点击已有区域可调整。', draw: '按住鼠标圈选，松开即添加区域。', importing: '正在导入图片。', tooSmall: '圈选范围太小，请重新圈选。', outside: '圈选不能超出图片，请重新圈选。',
+        overlap: '区域不能重叠，请重新圈选。', unavailable: '结果尚未就绪，不能复制。', copied: 'JSON 已复制。', copyChanged: '内容已变化，请再次复制。', copyFailed: '复制失败，请手动复制 JSON。', exportFailed: '蒙版生成失败，请重试。'
+      },
+      en: {
+        emptyJson: 'Outline an area to generate JSON for your AI agent.', chooseToGenerate: 'Choose an image to generate JSON and a black-and-white mask.', decodeFailed: 'We couldn’t open this image.',
+        importPreserved: 'We couldn’t open this image. Your current work is unchanged.', pathFailed: 'We couldn’t access this file. Import it again.', pathPending: 'Finishing import…',
+        outputReady: 'Your JSON and mask are ready.', drawing: 'Outlining an area…', tooLong: 'That outline is too complex. Try again with a shorter stroke.', invalid: 'That outline didn’t form a valid area. Try again.',
+        continue: 'Outline another area, or click an existing one to adjust it.', draw: 'Click and drag to outline an area, then release.', importing: 'Importing image…', tooSmall: 'That selection is too small. Try again.', outside: 'Keep the selection inside the image and try again.',
+        overlap: 'Selected areas can’t overlap. Try again.', unavailable: 'JSON isn’t ready to copy yet.', copied: 'JSON copied.', copyChanged: 'The JSON changed while it was being copied. Copy it again.', copyFailed: 'Couldn’t copy the JSON. Copy it from the preview instead.', exportFailed: 'Couldn’t generate the mask. Try again.'
+      }
+    };
+    const t = (key) => messages[state.language]?.[key] ?? messages.zh[key] ?? key;
+
+    const pngDimensions = (bytes) => {
+      if (String.fromCharCode(...bytes.subarray(12, 16)) !== 'IHDR') throw new Error('mask PNG is missing IHDR');
+      const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+      return { width: view.getUint32(16), height: view.getUint32(20) };
+    };
+
+    const loadImage = (url) => {
+      const image = new Image();
+      let resolveLoad;
+      let rejectLoad;
+      let settled = false;
+      const clearHandlers = () => { image.onload = null; image.onerror = null; };
+      const promise = new Promise((resolve, reject) => { resolveLoad = resolve; rejectLoad = reject; });
+      image.onload = () => {
+        if (settled) return;
+        settled = true;
+        clearHandlers();
+        resolveLoad(image);
+      };
+      image.onerror = () => {
+        if (settled) return;
+        settled = true;
+        clearHandlers();
+        rejectLoad(new Error('图片无法解码'));
+      };
+      image.src = url;
+      return {
+        image,
+        promise,
+        cancel() {
+          if (settled) return false;
+          settled = true;
+          clearHandlers();
+          image.src = '';
+          rejectLoad(new DOMException('图片加载已取消', 'AbortError'));
+          return true;
+        }
+      };
+    };
+
+    const copyPoints = (points) => points.map((point) => [...point]);
+    const copyRegions = (regions = state.regions) => regions.map(copyPoints);
+
+    function syntaxJson(json) {
+      const escaped = json.replace(/[&<>]/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[character]);
+      return escaped.split('\n').map((line) => `<span class="line"><span class="line-content">${line.replace(/("(?:\\u[a-fA-F0-9]{4}|\\[^u]|[^\\"])*")(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?/g, (match, string, key) => `<span class="${key ? 'key' : string ? 'string' : match === 'null' ? 'null' : /true|false/.test(match) ? 'boolean' : 'number'}">${match}</span>`)}</span></span>`).join('');
+    }
+
+    function renderJsonPreview() {
+      const json = state.output ? JSON.stringify(state.output.payload, null, 2) : null;
+      const renderKey = `${state.language}\u0000${json ?? ''}`;
+      if (renderKey === renderedJson) return;
+      const scrollTop = jsonPreview.parentElement.scrollTop;
+      jsonPreview.innerHTML = json ? syntaxJson(json) : `<span class="empty-json">${t('emptyJson')}</span>`;
+      jsonPreview.parentElement.scrollTop = scrollTop;
+      renderedJson = renderKey;
+    }
+
+    function render() {
+      const task = state.task;
+      imageStage.style.transform = `translate(${state.viewport.x}px, ${state.viewport.y}px) scale(${state.viewport.zoom})`;
+      const ready = task?.imageStatus === 'ready';
+      changeImageLabel.textContent = state.language === 'en' ? (ready ? 'Change Image' : 'Open Image') : (ready ? '更换图片' : '打开图片');
+      layout.classList.toggle('ready', ready);
+      imageStage.hidden = !ready;
+      emptyCanvas.hidden = ready;
+      emptyGuide.hidden = ready;
+      resultPanel.hidden = !ready;
+      toolbar.hidden = !ready;
+      toolbar.classList.toggle('drawing', state.interaction?.type === 'draw');
+      const viewportLocked = state.interaction?.type === 'draw';
+      fitButton.disabled = viewportLocked;
+      actualSizeButton.disabled = viewportLocked;
+      zoomOutButton.disabled = viewportLocked;
+      zoomInButton.disabled = viewportLocked;
+      const taskChanging = Boolean(state.pendingImport);
+      const downloadBlocked = !state.output || Boolean(state.interaction) || taskChanging;
+      copyButton.disabled = downloadBlocked;
+      download.classList.toggle('disabled', downloadBlocked);
+      download.tabIndex = downloadBlocked ? -1 : 0;
+      if (downloadBlocked) {
+        if (document.activeElement === download) download.blur();
+        download.removeAttribute('href');
+        download.removeAttribute('download');
+      } else if (state.downloadUrl) {
+        download.href = state.downloadUrl;
+        download.download = contract.maskFileName(task.fileName);
+      }
+      undoButton.disabled = state.history.length === 0 || Boolean(state.interaction);
+      clearButton.disabled = state.regions.length === 0 || Boolean(state.interaction);
+      zoomLabel.textContent = `${Math.round(state.viewport.zoom * 100)}%`;
+      regionCount.textContent = state.language === 'zh' ? `${state.regions.length} 个区域` : `${state.regions.length} area${state.regions.length === 1 ? '' : 's'}`;
+      promptCount.textContent = String(promptInput.value.length);
+      promptCount.hidden = promptInput.value.length === 0;
+      updateCanvasScrollbars();
+      renderJsonPreview();
+      if (taskChanging) status.textContent = t('importing');
+      else if (state.notice) status.textContent = t(state.notice);
+      else if (!task) status.textContent = t('chooseToGenerate');
+      else if (task.imageStatus === 'failed') status.textContent = t('decodeFailed');
+      else if (task.platform === 'mac' && task.pathStatus === 'failed') status.textContent = t('pathFailed');
+      else if (task.platform === 'mac' && task.pathStatus === 'pending') status.textContent = t('pathPending');
+      else if (state.output) status.textContent = t('outputReady');
+      else if (task.imageStatus === 'ready' && state.selection?.drawing) status.textContent = t('drawing');
+      else if (task.imageStatus === 'ready' && state.selection?.exhausted) status.textContent = t('tooLong');
+      else if (task.imageStatus === 'ready' && state.selection?.points.length) status.textContent = t('invalid');
+      else if (task.imageStatus === 'ready' && state.regions.length) status.textContent = t('continue');
+      else if (task.imageStatus === 'ready') status.textContent = t('draw');
+      else status.textContent = t('importing');
+      const showOnboarding = Boolean(ready && state.regions.length === 0 && !state.interaction && !taskChanging && !state.notice
+        && !(task.platform === 'mac' && task.pathStatus !== 'ready'));
+      status.classList.toggle('onboarding', showOnboarding);
+      const showStatus = taskChanging || Boolean(state.notice)
+        || Boolean(task && task.imageStatus !== 'ready')
+        || Boolean(ready && task.platform === 'mac' && task.pathStatus !== 'ready')
+        || Boolean(state.selection?.exhausted)
+        || showOnboarding;
+      status.hidden = !showStatus;
+      lastCanvasSize = { width: canvasViewport.clientWidth, height: canvasViewport.clientHeight };
+    }
+
+    function handleWindowResize() {
+      clampToolbar();
+      const next = { width: canvasViewport.clientWidth, height: canvasViewport.clientHeight };
+      const widthChange = lastCanvasSize ? next.width - lastCanvasSize.width : 0;
+      const heightChange = lastCanvasSize ? next.height - lastCanvasSize.height : 0;
+      if (state.task?.imageStatus === 'ready' && state.interaction?.type !== 'draw' && lastCanvasSize && next.width > 0 && next.height > 0 && (widthChange || heightChange)) {
+        state.viewport = constrainViewport({
+          zoom: state.viewport.zoom,
+          x: state.viewport.x + widthChange / 2,
+          y: state.viewport.y + heightChange / 2
+        });
+      }
+      lastCanvasSize = next;
+      render();
+      redrawSelection();
+    }
+
+    function clearOutput() {
+      state.output = null;
+      state.copyMethod = null;
+      jsonOutput.value = '';
+      download.hidden = true;
+      download.removeAttribute('href');
+      download.removeAttribute('download');
+      if (state.downloadUrl) URL.revokeObjectURL(state.downloadUrl);
+      state.downloadUrl = null;
+    }
+
+    function revokeOwnedImageUrl(task) {
+      if (!task?.ownedImageUrl || task.ownedImageUrlRevoked) return;
+      URL.revokeObjectURL(task.ownedImageUrl);
+      task.ownedImageUrlRevoked = true;
+    }
+
+    function disposeTask(task) {
+      if (!task) return;
+      if (task.platform === 'mac' && task.importNonce && !task.nativeReleaseSent) {
+        task.nativeReleaseSent = true;
+        try { bridge()?.postMessage({ type: 'import-release', import_nonce: task.importNonce }); } catch {}
+      }
+      task.imageLoad?.cancel();
+      task.imageLoad = null;
+      clearPathTimer(task);
+      revokeOwnedImageUrl(task);
+    }
+
+    function drawPolygon(context, points, selected = false) {
+      if (!points?.length) return;
+      context.beginPath();
+      context.moveTo(points[0][0], points[0][1]);
+      for (let index = 1; index < points.length; index++) context.lineTo(points[index][0], points[index][1]);
+      if (points.length >= 3) context.closePath();
+      context.lineWidth = (selected ? 4.2 : 3.5) / state.viewport.zoom;
+      context.strokeStyle = '#20272c';
+      context.stroke();
+      context.lineWidth = (selected ? 2.2 : 1.5) / state.viewport.zoom;
+      context.strokeStyle = '#ffe500';
+      context.fillStyle = selected ? 'rgba(255,229,0,.17)' : 'rgba(8,13,18,.16)';
+      if (points.length >= 3) context.fill();
+      context.stroke();
+      if (!selected) return;
+      const radius = 3.45 / state.viewport.zoom;
+      points.forEach((point, index) => {
+        context.beginPath();
+        context.lineWidth = 1.5 / state.viewport.zoom;
+        context.strokeStyle = '#20272c';
+        context.fillStyle = index === state.selectedNode ? '#fff' : '#ffe500';
+        context.arc(point[0], point[1], index === state.selectedNode ? radius * 1.45 : radius, 0, Math.PI * 2);
+        context.fill();
+        context.stroke();
+      });
+    }
+
+    function redrawSelection() {
+      const task = state.task;
+      const width = task?.width ?? 0;
+      const height = task?.height ?? 0;
+      if (selectionOverlay.width !== width) selectionOverlay.width = width;
+      if (selectionOverlay.height !== height) selectionOverlay.height = height;
+      const context = selectionOverlay.getContext('2d');
+      const selection = state.selection;
+      context.clearRect(0, 0, selectionOverlay.width, selectionOverlay.height);
+      if (selection?.exhausted) return;
+      state.regions.forEach((region, index) => drawPolygon(context, region, index === state.selectedRegion));
+      const points = selection?.points;
+      if (!selection?.drawing || !points?.length) return;
+      context.beginPath();
+      context.moveTo(points[0][0], points[0][1]);
+      for (let index = 1; index < points.length; index++) context.lineTo(points[index][0], points[index][1]);
+      context.lineWidth = 2 / state.viewport.zoom;
+      context.strokeStyle = selection.overlap ? '#ff6259' : '#ffe500';
+      context.stroke();
+    }
+
+    function drawSelectionSegment(start, end) {
+      const context = selectionOverlay.getContext('2d');
+      context.beginPath();
+      context.moveTo(start[0], start[1]);
+      context.lineTo(end[0], end[1]);
+      context.lineWidth = 2 / state.viewport.zoom;
+      context.strokeStyle = '#ffe500';
+      context.stroke();
+    }
+
+    function resetSelection() {
+      state.selection = null;
+      state.regions = [];
+      state.selectedRegion = -1;
+      state.selectedNode = -1;
+      state.interaction = null;
+      state.history = [];
+      redrawSelection();
+    }
+
+    function selectionPoint(event) {
+      const task = state.task;
+      const bounds = selectionOverlay.getBoundingClientRect();
+      if (!task?.width || !task?.height || !bounds.width || !bounds.height) return null;
+      const raw = [event.clientX - bounds.left, event.clientY - bounds.top];
+      const display = [
+        Math.max(0, Math.min(bounds.width, raw[0])),
+        Math.max(0, Math.min(bounds.height, raw[1]))
+      ];
+      return {
+        image: [
+          Math.round(display[0] * task.width / bounds.width),
+          Math.round(display[1] * task.height / bounds.height)
+        ],
+        display,
+        inside: raw[0] >= 0 && raw[0] <= bounds.width && raw[1] >= 0 && raw[1] <= bounds.height
+      };
+    }
+
+    function appendSelectionPoint(point, force = false) {
+      const selection = state.selection;
+      if (!point || !selection || selection.exhausted) return false;
+      const previous = selection.points.at(-1);
+      if (previous && previous[0] === point.image[0] && previous[1] === point.image[1]) return false;
+      if (!force && !selectionCleaner.isDisplayPointFarEnough(selection.displayPoints.at(-1), point.display)) return false;
+      if (selection.points.length >= maxCapturedSelectionPoints) {
+        selection.exhausted = true;
+        state.notice = 'tooLong';
+        redrawSelection();
+        render();
+        return false;
+      }
+      selection.points.push(point.image);
+      selection.displayPoints.push(point.display);
+      return true;
+    }
+
+    function pointerEventSequence(event) {
+      let coalesced = [];
+      try { coalesced = typeof event?.getCoalescedEvents === 'function' ? event.getCoalescedEvents() : []; } catch {}
+      return coalesced?.length ? [...coalesced, event] : [event];
+    }
+
+    function processDrawPoint(event, force = false) {
+      const selection = state.selection;
+      const selected = selectionPoint(event);
+      if (!selected || !selection) return false;
+      if (!selected.inside && !selection.outside) {
+        selection.outside = true;
+        state.notice = 'outside';
+        render();
+      }
+      const previousPointer = selection.lastPointerPoint;
+      selection.lastPointerPoint = selected.image;
+      if (!selection.overlap && previousPointer && selectionSegmentTouchesExistingRegion(previousPointer, selected.image)) {
+        selection.overlap = true;
+        state.notice = 'overlap';
+        redrawSelection();
+        render();
+      }
+      const previous = selection.points.at(-1);
+      if (appendSelectionPoint(selected, force)) {
+        drawSelectionSegment(previous, selection.points.at(-1));
+        if (!selection.overlap && drawingTouchesExistingRegion(selection.points)) {
+          selection.overlap = true;
+          state.notice = 'overlap';
+          redrawSelection();
+          render();
+        }
+      }
+      return true;
+    }
+
+    const distanceSquared = (a, b) => (a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2;
+    const cross = (a, b, c) => (b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0]);
+    const onSegment = (point, a, b) => Math.abs(cross(a, b, point)) < 1e-9 && point[0] >= Math.min(a[0], b[0]) && point[0] <= Math.max(a[0], b[0]) && point[1] >= Math.min(a[1], b[1]) && point[1] <= Math.max(a[1], b[1]);
+
+    function pointInPolygon(point, polygon, includeBoundary = true) {
+      let inside = false;
+      for (let index = 0, previous = polygon.length - 1; index < polygon.length; previous = index++) {
+        const a = polygon[previous];
+        const b = polygon[index];
+        if (onSegment(point, a, b)) return includeBoundary;
+        if ((a[1] > point[1]) !== (b[1] > point[1]) && point[0] < (b[0] - a[0]) * (point[1] - a[1]) / (b[1] - a[1]) + a[0]) inside = !inside;
+      }
+      return inside;
+    }
+
+    function segmentsProperlyCross(a, b, c, d) {
+      const abC = cross(a, b, c);
+      const abD = cross(a, b, d);
+      const cdA = cross(c, d, a);
+      const cdB = cross(c, d, b);
+      return abC * abD < 0 && cdA * cdB < 0;
+    }
+
+    function collinearEdgesShareInterior(a, b, c, d, first, second) {
+      if (Math.abs(cross(a, b, c)) > 1e-9 || Math.abs(cross(a, b, d)) > 1e-9) return false;
+      const useX = Math.abs(b[0] - a[0]) >= Math.abs(b[1] - a[1]);
+      const coordinate = (point) => point[useX ? 0 : 1];
+      const start = Math.max(Math.min(coordinate(a), coordinate(b)), Math.min(coordinate(c), coordinate(d)));
+      const end = Math.min(Math.max(coordinate(a), coordinate(b)), Math.max(coordinate(c), coordinate(d)));
+      if (end - start <= 1e-9) return false;
+      const amount = Math.abs(coordinate(b) - coordinate(a)) < 1e-9 ? .5 : ((start + end) / 2 - coordinate(a)) / (coordinate(b) - coordinate(a));
+      const midpoint = [a[0] + amount * (b[0] - a[0]), a[1] + amount * (b[1] - a[1])];
+      const length = Math.hypot(b[0] - a[0], b[1] - a[1]);
+      if (!length) return false;
+      const normal = [-(b[1] - a[1]) / length * .25, (b[0] - a[0]) / length * .25];
+      return [1, -1].some((direction) => {
+        const sample = [midpoint[0] + normal[0] * direction, midpoint[1] + normal[1] * direction];
+        return pointInPolygon(sample, first, false) && pointInPolygon(sample, second, false);
+      });
+    }
+
+    function buildRegionEdgeIndex(region) {
+      const bounds = regionBounds(region);
+      const cellsPerSide = Math.ceil(Math.sqrt(region.length));
+      const cellSize = Math.max(1, Math.ceil(Math.max(bounds.maxX - bounds.minX, bounds.maxY - bounds.minY) / cellsPerSide));
+      const cells = new Map();
+      const edgeCells = (start, end) => {
+        const x0 = (start[0] - bounds.minX) / cellSize;
+        const y0 = (start[1] - bounds.minY) / cellSize;
+        const x1 = (end[0] - bounds.minX) / cellSize;
+        const y1 = (end[1] - bounds.minY) / cellSize;
+        const dx = x1 - x0;
+        const dy = y1 - y0;
+        const keys = new Set();
+        const add = (x, y) => keys.add(`${x},${y}`);
+        let column = Math.floor(x0);
+        let row = Math.floor(y0);
+        const stepX = Math.sign(dx);
+        const stepY = Math.sign(dy);
+        const deltaX = stepX ? 1 / Math.abs(dx) : Infinity;
+        const deltaY = stepY ? 1 / Math.abs(dy) : Infinity;
+        let nextX = stepX > 0 ? (column + 1 - x0) / dx : stepX < 0 ? (x0 - column) / -dx : Infinity;
+        let nextY = stepY > 0 ? (row + 1 - y0) / dy : stepY < 0 ? (y0 - row) / -dy : Infinity;
+        add(column, row);
+        const limit = Math.abs(Math.floor(x1) - column) + Math.abs(Math.floor(y1) - row) + 4;
+        for (let traversed = 0; traversed < limit && Math.min(nextX, nextY) <= 1 + 1e-12; traversed++) {
+          if (Math.abs(nextX - nextY) <= 1e-12) {
+            add(column + stepX, row);
+            add(column, row + stepY);
+            column += stepX;
+            row += stepY;
+            nextX += deltaX;
+            nextY += deltaY;
+          } else if (nextX < nextY) {
+            column += stepX;
+            nextX += deltaX;
+          } else {
+            row += stepY;
+            nextY += deltaY;
+          }
+          add(column, row);
+        }
+        if (y0 === y1 && Number.isInteger(y0)) [...keys].forEach((key) => { const [x, y] = key.split(',').map(Number); add(x, y - 1); });
+        if (x0 === x1 && Number.isInteger(x0)) [...keys].forEach((key) => { const [x, y] = key.split(',').map(Number); add(x - 1, y); });
+        return keys;
+      };
+      region.forEach((start, index) => {
+        for (const key of edgeCells(start, region[(index + 1) % region.length])) {
+          const entries = cells.get(key) ?? [];
+          entries.push(index);
+          cells.set(key, entries);
+        }
+      });
+      return { bounds, cells, edgeCells };
+    }
+
+    function cachedRegionEdgeIndex(region) {
+      let index = regionEdgeIndexCache.get(region);
+      if (!index) {
+        index = buildRegionEdgeIndex(region);
+        regionEdgeIndexCache.set(region, index);
+      }
+      return index;
+    }
+
+    function segmentIntersectionAmounts(start, end, otherStart, otherEnd) {
+      const dx = end[0] - start[0];
+      const dy = end[1] - start[1];
+      const otherDx = otherEnd[0] - otherStart[0];
+      const otherDy = otherEnd[1] - otherStart[1];
+      const denominator = dx * otherDy - dy * otherDx;
+      if (Math.abs(denominator) > 1e-9) {
+        const offsetX = otherStart[0] - start[0];
+        const offsetY = otherStart[1] - start[1];
+        const amount = (offsetX * otherDy - offsetY * otherDx) / denominator;
+        const otherAmount = (offsetX * dy - offsetY * dx) / denominator;
+        return amount >= -1e-9 && amount <= 1 + 1e-9 && otherAmount >= -1e-9 && otherAmount <= 1 + 1e-9
+          ? [Math.max(0, Math.min(1, amount))] : [];
+      }
+      if (Math.abs(cross(start, end, otherStart)) > 1e-9 || Math.abs(cross(start, end, otherEnd)) > 1e-9) return [];
+      const lengthSquared = dx * dx + dy * dy;
+      if (!lengthSquared) return [];
+      return [otherStart, otherEnd]
+        .filter((point) => onSegment(point, start, end))
+        .map((point) => Math.max(0, Math.min(1, ((point[0] - start[0]) * dx + (point[1] - start[1]) * dy) / lengthSquared)));
+    }
+
+    function amountsRunInside(start, end, amounts, polygon) {
+      const ordered = [...new Set([0, 1, ...amounts].map((amount) => amount.toFixed(9)))].map(Number).sort((a, b) => a - b);
+      return ordered.slice(1).some((endAmount, index) => {
+        const startAmount = ordered[index];
+        if (endAmount - startAmount < 1e-9) return false;
+        const amount = (startAmount + endAmount) / 2;
+        return pointInPolygon([
+          start[0] + (end[0] - start[0]) * amount,
+          start[1] + (end[1] - start[1]) * amount
+        ], polygon, false);
+      });
+    }
+
+    function segmentRunsInsideIndexed(start, end, polygon, index) {
+      const candidates = new Set([...index.edgeCells(start, end)].flatMap((key) => index.cells.get(key) ?? []));
+      const amounts = [];
+      for (const edgeIndex of candidates) amounts.push(...segmentIntersectionAmounts(start, end, polygon[edgeIndex], polygon[(edgeIndex + 1) % polygon.length]));
+      return amounts.length > 0 && amountsRunInside(start, end, amounts, polygon);
+    }
+
+    function translatedEdgeSweepHits(start, end, moveX, moveY, polygon, index) {
+      const movedStart = [start[0] + moveX, start[1] + moveY];
+      const movedEnd = [end[0] + moveX, end[1] + moveY];
+      const sweep = [start, end, movedEnd, movedStart];
+      const candidates = new Set();
+      for (let edge = 0; edge < sweep.length; edge++) {
+        for (const key of index.edgeCells(sweep[edge], sweep[(edge + 1) % sweep.length])) {
+          for (const candidate of index.cells.get(key) ?? []) candidates.add(candidate);
+        }
+      }
+      for (const candidate of candidates) {
+        const obstacleStart = polygon[candidate];
+        const obstacleEnd = polygon[(candidate + 1) % polygon.length];
+        const amounts = [];
+        for (let edge = 0; edge < sweep.length; edge++) {
+          amounts.push(...segmentIntersectionAmounts(obstacleStart, obstacleEnd, sweep[edge], sweep[(edge + 1) % sweep.length]));
+        }
+        if ((amounts.length && amountsRunInside(obstacleStart, obstacleEnd, amounts, sweep))
+          || pointInPolygon(obstacleStart, sweep, false) || pointInPolygon(obstacleEnd, sweep, false)) return true;
+      }
+      return false;
+    }
+
+    function regionsOverlap(first, second, secondIndex = null, firstBounds = regionBounds(first)) {
+      if (first === second) return true;
+      const index = secondIndex ?? buildRegionEdgeIndex(second);
+      const secondBounds = index.bounds;
+      if (!boundsOverlap(firstBounds, secondBounds)) return false;
+      const { cells, edgeCells } = index;
+      const secondEdgeAmounts = new Map();
+      for (let firstIndex = 0; firstIndex < first.length; firstIndex++) {
+        const a = first[firstIndex];
+        const b = first[(firstIndex + 1) % first.length];
+        const candidates = new Set([...edgeCells(a, b)].flatMap((key) => cells.get(key) ?? []));
+        const firstAmounts = [];
+        for (const candidateIndex of candidates) {
+          const c = second[candidateIndex];
+          const d = second[(candidateIndex + 1) % second.length];
+          if (segmentsProperlyCross(a, b, c, d) || collinearEdgesShareInterior(a, b, c, d, first, second)) return true;
+          const amounts = segmentIntersectionAmounts(a, b, c, d);
+          if (!amounts.length) continue;
+          firstAmounts.push(...amounts);
+          const reverse = segmentIntersectionAmounts(c, d, a, b);
+          if (reverse.length) secondEdgeAmounts.set(candidateIndex, [...(secondEdgeAmounts.get(candidateIndex) ?? []), ...reverse]);
+        }
+        if (firstAmounts.length && amountsRunInside(a, b, firstAmounts, second)) return true;
+      }
+      for (const [edgeIndex, amounts] of secondEdgeAmounts) {
+        if (amountsRunInside(second[edgeIndex], second[(edgeIndex + 1) % second.length], amounts, first)) return true;
+      }
+      return pointInPolygon(first[0], second, false) || pointInPolygon(second[0], first, false);
+    }
+
+    function overlapsOtherRegion(points, ignoredIndex = -1) {
+      return state.regions.some((region, index) => index !== ignoredIndex && regionsOverlap(points, region, cachedRegionEdgeIndex(region)));
+    }
+
+    function regionBounds(points) {
+      return points.reduce((bounds, [x, y]) => ({
+        minX: Math.min(bounds.minX, x), minY: Math.min(bounds.minY, y),
+        maxX: Math.max(bounds.maxX, x), maxY: Math.max(bounds.maxY, y)
+      }), { minX: Infinity, minY: Infinity, maxX: -Infinity, maxY: -Infinity });
+    }
+
+    function boundsOverlap(first, second) {
+      return first.minX < second.maxX && first.maxX > second.minX && first.minY < second.maxY && first.maxY > second.minY;
+    }
+
+    function selectionSegmentTouchesExistingRegion(start, end) {
+      return state.regions.some((region) => pointInPolygon(end, region, false)
+        || segmentRunsInsideIndexed(start, end, region, cachedRegionEdgeIndex(region)));
+    }
+
+    function drawingTouchesExistingRegion(points) {
+      return points.length >= 2 && selectionSegmentTouchesExistingRegion(points.at(-2), points.at(-1));
+    }
+
+    function closestSegment(point, polygon) {
+      let closest = null;
+      for (let index = 0; index < polygon.length; index++) {
+        const start = polygon[index];
+        const end = polygon[(index + 1) % polygon.length];
+        const dx = end[0] - start[0];
+        const dy = end[1] - start[1];
+        const lengthSquared = dx * dx + dy * dy;
+        const amount = lengthSquared ? Math.max(0, Math.min(1, ((point[0] - start[0]) * dx + (point[1] - start[1]) * dy) / lengthSquared)) : 0;
+        const projected = [Math.round(start[0] + amount * dx), Math.round(start[1] + amount * dy)];
+        const candidate = { index, point: projected, distance: Math.sqrt(distanceSquared(point, projected)) };
+        if (!closest || candidate.distance < closest.distance) closest = candidate;
+      }
+      return closest;
+    }
+
+    function isEditableEdge(point, polygon, segment = closestSegment(point, polygon)) {
+      if (!segment) return false;
+      const radiusCss = pointInPolygon(point, polygon, false) ? 2 : edgeHitRadiusCss;
+      return segment.distance <= radiusCss / state.viewport.zoom;
+    }
+
+    function hitNode(point) {
+      if (state.selectedRegion < 0) return null;
+      const radiusSquared = (8 / state.viewport.zoom) ** 2;
+      const regionIndex = state.selectedRegion;
+      let closest = null;
+      state.regions[regionIndex]?.forEach((node, nodeIndex) => {
+        const distance = distanceSquared(point, node);
+        if (distance <= radiusSquared && (!closest || distance < closest.distance)) closest = { regionIndex, nodeIndex, distance };
+      });
+      return closest ? { regionIndex, nodeIndex: closest.nodeIndex } : null;
+    }
+
+    function hitRegion(point) {
+      for (let index = state.regions.length - 1; index >= 0; index--) if (pointInPolygon(point, state.regions[index])) return index;
+      return -1;
+    }
+
+    function hitOtherRegionInterior(point) {
+      for (let index = state.regions.length - 1; index >= 0; index--) {
+        if (index !== state.selectedRegion && pointInPolygon(point, state.regions[index], false)) return index;
+      }
+      return -1;
+    }
+
+    function saveHistory(regions = state.regions) {
+      state.history.push(copyRegions(regions));
+      if (state.history.length > 50) state.history.shift();
+    }
+
+    const regionsEqual = (first, second) => JSON.stringify(first) === JSON.stringify(second);
+
+    function validEditedRegion(region, index) {
+      const task = state.task;
+      if (!task || region.some(([x, y]) => x < 0 || y < 0 || x > task.width || y > task.height) || overlapsOtherRegion(region, index)) return false;
+      try {
+        contract.createPayload({ platform: 'web', sourceImage: { file_name: task.fileName, width: task.width, height: task.height }, regions: [region] });
+        return true;
+      } catch { return false; }
+    }
+
+    function pathBoundsOverlap(start, end, bounds) {
+      return Math.min(start[0], end[0]) <= bounds.maxX && Math.max(start[0], end[0]) >= bounds.minX
+        && Math.min(start[1], end[1]) <= bounds.maxY && Math.max(start[1], end[1]) >= bounds.minY;
+    }
+
+    function translationSweepOverlaps(region, dx, dy, amount, nearby, movingGeometry = null) {
+      const moveX = dx * amount;
+      const moveY = dy * amount;
+      const destination = region.map(([x, y]) => [x + moveX, y + moveY]);
+      const destinationBounds = regionBounds(destination);
+      for (const entry of nearby) {
+        if (boundsOverlap(destinationBounds, entry.bounds) && regionsOverlap(destination, entry.region, entry.edgeIndex, destinationBounds)) return true;
+        for (let edge = 0; edge < region.length; edge++) {
+          const start = region[edge];
+          const end = [start[0] + moveX, start[1] + moveY];
+          if (pathBoundsOverlap(start, end, entry.bounds) && segmentRunsInsideIndexed(start, end, entry.region, entry.edgeIndex)) return true;
+          if (translatedEdgeSweepHits(start, region[(edge + 1) % region.length], moveX, moveY, entry.region, entry.edgeIndex)) return true;
+        }
+        if (movingGeometry) for (const point of entry.region) {
+          const start = [point[0] - movingGeometry.offset[0], point[1] - movingGeometry.offset[1]];
+          const end = [start[0] - moveX, start[1] - moveY];
+          if (pathBoundsOverlap(start, end, movingGeometry.index.bounds) && segmentRunsInsideIndexed(start, end, movingGeometry.region, movingGeometry.index)) return true;
+        }
+      }
+      return false;
+    }
+
+    function boundedTranslation(region, dx, dy, nearby, movingGeometry) {
+      if (!translationSweepOverlaps(region, dx, dy, 1, nearby, movingGeometry)) return [dx, dy];
+      const steps = Math.max(1, Math.max(Math.abs(dx), Math.abs(dy)));
+      if (translationSweepOverlaps(region, dx, dy, 1 / steps, nearby, movingGeometry)) return [0, 0];
+      let safe = 0;
+      let blocked = 1;
+      const iterations = Math.min(18, Math.ceil(Math.log2(steps + 1)) + 2);
+      for (let iteration = 0; iteration < iterations; iteration++) {
+        const amount = (safe + blocked) / 2;
+        if (translationSweepOverlaps(region, dx, dy, amount, nearby, movingGeometry)) blocked = amount;
+        else safe = amount;
+      }
+      let step = Math.max(0, Math.floor(safe * steps - 1e-9));
+      while (step > 0) {
+        const moveX = Math.round(dx * step / steps);
+        const moveY = Math.round(dy * step / steps);
+        const amount = Math.max(Math.abs(dx) ? Math.abs(moveX / dx) : 0, Math.abs(dy) ? Math.abs(moveY / dy) : 0);
+        if (!translationSweepOverlaps(region, moveX, moveY, amount ? 1 : 0, nearby, movingGeometry)) return [moveX, moveY];
+        step -= 1;
+      }
+      return [0, 0];
+    }
+
+    function nodeSweepBlocked(region, regionIndex, nodeIndex, dx, dy, amount, nearby) {
+      const candidate = copyPoints(region);
+      const node = region[nodeIndex];
+      const moved = [node[0] + dx * amount, node[1] + dy * amount];
+      candidate[nodeIndex] = [Math.round(moved[0]), Math.round(moved[1])];
+      if (!validEditedRegion(candidate, regionIndex)) return true;
+      const previous = region[(nodeIndex + region.length - 1) % region.length];
+      const next = region[(nodeIndex + 1) % region.length];
+      if (region.length === 3 && segmentsProperlyCross(node, moved, previous, next)) return true;
+      for (const triangle of [[previous, node, moved], [next, node, moved]]) {
+        if (Math.abs(cross(triangle[0], triangle[1], triangle[2])) <= 1e-9) continue;
+        const bounds = regionBounds(triangle);
+        if (nearby.some((entry) => boundsOverlap(bounds, entry.bounds) && regionsOverlap(triangle, entry.region, entry.edgeIndex, bounds))) return true;
+        const triangleIndex = buildRegionEdgeIndex(triangle);
+        for (let edgeIndex = 0; edgeIndex < region.length; edgeIndex++) {
+          if (edgeIndex === nodeIndex || edgeIndex === (nodeIndex + region.length - 1) % region.length) continue;
+          const start = region[edgeIndex];
+          const end = region[(edgeIndex + 1) % region.length];
+          if (pointInPolygon(start, triangle, false) || segmentRunsInsideIndexed(start, end, triangle, triangleIndex)) return true;
+        }
+      }
+      return false;
+    }
+
+    function moveNode(regionIndex, nodeIndex, dx, dy) {
+      const region = state.regions[regionIndex];
+      if (!region || (!dx && !dy)) return region;
+      const nearby = state.regions.flatMap((other, index) => index === regionIndex ? [] : [{ region: other, bounds: regionBounds(other), edgeIndex: cachedRegionEdgeIndex(other) }]);
+      if (!nodeSweepBlocked(region, regionIndex, nodeIndex, dx, dy, 1, nearby)) {
+        const candidate = copyPoints(region);
+        candidate[nodeIndex] = [region[nodeIndex][0] + dx, region[nodeIndex][1] + dy];
+        return candidate;
+      }
+      let safe = 0;
+      let blocked = 1;
+      for (let iteration = 0; iteration < 18; iteration++) {
+        const amount = (safe + blocked) / 2;
+        if (nodeSweepBlocked(region, regionIndex, nodeIndex, dx, dy, amount, nearby)) blocked = amount;
+        else safe = amount;
+      }
+      const steps = Math.max(1, Math.max(Math.abs(dx), Math.abs(dy)));
+      for (let step = Math.max(0, Math.floor(safe * steps - 1e-9)); step > 0; step--) {
+        const candidate = copyPoints(region);
+        candidate[nodeIndex] = [
+          region[nodeIndex][0] + Math.round(dx * step / steps),
+          region[nodeIndex][1] + Math.round(dy * step / steps)
+        ];
+        if (validEditedRegion(candidate, regionIndex)) return candidate;
+      }
+      return region;
+    }
+
+    function moveRegion(regionIndex, dx, dy, movingGeometry = null) {
+      const task = state.task;
+      const current = state.regions[regionIndex];
+      if (!task || !current?.length) return current;
+      const xs = current.map((point) => point[0]);
+      const ys = current.map((point) => point[1]);
+      const clampedDx = Math.max(-Math.min(...xs), Math.min(task.width - Math.max(...xs), dx));
+      const clampedDy = Math.max(-Math.min(...ys), Math.min(task.height - Math.max(...ys), dy));
+      if (!clampedDx && !clampedDy) return current;
+      const translate = (moveX, moveY) => current.map(([x, y]) => [x + moveX, y + moveY]);
+      const otherBounds = state.regions.flatMap((region, index) => index === regionIndex ? [] : [{ region, bounds: regionBounds(region) }]);
+      if (!otherBounds.length) return translate(clampedDx, clampedDy);
+      const currentBounds = regionBounds(current);
+      const destinationBounds = { minX: currentBounds.minX + clampedDx, minY: currentBounds.minY + clampedDy, maxX: currentBounds.maxX + clampedDx, maxY: currentBounds.maxY + clampedDy };
+      const sweptBounds = {
+        minX: Math.min(currentBounds.minX, destinationBounds.minX), minY: Math.min(currentBounds.minY, destinationBounds.minY),
+        maxX: Math.max(currentBounds.maxX, destinationBounds.maxX), maxY: Math.max(currentBounds.maxY, destinationBounds.maxY)
+      };
+      const nearby = otherBounds.filter((entry) => boundsOverlap(sweptBounds, entry.bounds)).map((entry) => ({ ...entry, edgeIndex: cachedRegionEdgeIndex(entry.region) }));
+      if (!nearby.length) return translate(clampedDx, clampedDy);
+      const [acceptedDx, acceptedDy] = boundedTranslation(current, clampedDx, clampedDy, nearby, movingGeometry);
+      return acceptedDx || acceptedDy ? translate(acceptedDx, acceptedDy) : current;
+    }
+
+    function beginSelection(event) {
+      const task = state.task;
+      if (!task || task.imageStatus !== 'ready' || state.interaction) return;
+      if (event.button === 1 || (event.button === 0 && state.spaceDown)) {
+        state.interaction = { type: 'pan', start: [event.clientX, event.clientY], before: { ...state.viewport }, pointerId: event.pointerId ?? null };
+        selectionOverlay.style.cursor = 'grabbing';
+        if (event.pointerId !== undefined) try { selectionOverlay.setPointerCapture(event.pointerId); } catch {}
+        event.preventDefault();
+        return;
+      }
+      if (event.button !== 0 || event.ctrlKey) return;
+      const selected = selectionPoint(event);
+      if (!selected) return;
+      const point = selected.image;
+      const selectedBefore = { region: state.selectedRegion, node: state.selectedNode };
+      state.notice = null;
+      regionMenu.hidden = true;
+      const node = hitNode(point);
+      const otherRegionIndex = hitOtherRegionInterior(point);
+      if (node) {
+        state.selectedRegion = node.regionIndex;
+        state.selectedNode = node.nodeIndex;
+        state.interaction = { type: 'node', ...node, before: copyPoints(state.regions[node.regionIndex]), historyBefore: copyRegions(), selectedBefore, lastPoint: point, pointerId: event.pointerId ?? null };
+      } else if (otherRegionIndex >= 0) {
+        const regionIndex = otherRegionIndex;
+        state.selectedRegion = regionIndex;
+        state.selectedNode = -1;
+        const baseRegion = copyPoints(state.regions[regionIndex]);
+        state.interaction = { type: 'region', regionIndex, before: copyPoints(baseRegion), historyBefore: copyRegions(), selectedBefore, lastPoint: point, pointerId: event.pointerId ?? null, baseRegion, baseEdgeIndex: cachedRegionEdgeIndex(baseRegion), regionOffset: [0, 0] };
+      } else if (state.selectedRegion >= 0) {
+        const segment = closestSegment(point, state.regions[state.selectedRegion]);
+        if (isEditableEdge(point, state.regions[state.selectedRegion], segment)) {
+          const candidate = copyPoints(state.regions[state.selectedRegion]);
+          const before = copyPoints(candidate);
+          const historyBefore = copyRegions();
+          candidate.splice(segment.index + 1, 0, segment.point);
+          if (validEditedRegion(candidate, state.selectedRegion)) {
+            state.regions[state.selectedRegion] = candidate;
+            state.selectedNode = segment.index + 1;
+            state.interaction = { type: 'node', regionIndex: state.selectedRegion, nodeIndex: state.selectedNode, before, historyBefore, selectedBefore, lastPoint: point, pointerId: event.pointerId ?? null };
+          }
+        }
+      }
+      if (!state.interaction) {
+        const regionIndex = hitRegion(point);
+        if (regionIndex >= 0) {
+          state.selectedRegion = regionIndex;
+          state.selectedNode = -1;
+          const baseRegion = copyPoints(state.regions[regionIndex]);
+          state.interaction = { type: 'region', regionIndex, before: copyPoints(baseRegion), historyBefore: copyRegions(), selectedBefore, lastPoint: point, pointerId: event.pointerId ?? null, baseRegion, baseEdgeIndex: cachedRegionEdgeIndex(baseRegion), regionOffset: [0, 0] };
+        } else {
+          state.selectedRegion = -1;
+          state.selectedNode = -1;
+          state.selection = { points: [point], displayPoints: [selected.display], lastPointerPoint: point, drawing: true, exhausted: false, overlap: false, outside: !selected.inside, pointerId: event.pointerId ?? null };
+          state.interaction = { type: 'draw', selectedBefore, pointerId: event.pointerId ?? null };
+        }
+      }
+      if (event.pointerId !== undefined) {
+        try { selectionOverlay.setPointerCapture(event.pointerId); } catch {}
+      }
+      event.preventDefault();
+      redrawSelection();
+      render();
+    }
+
+    function continueSelection(event) {
+      const interaction = state.interaction;
+      if (!interaction) {
+        if (state.spaceDown) {
+          selectionOverlay.style.cursor = 'grab';
+          return;
+        }
+        const selected = selectionPoint(event);
+        if (!selected) return;
+        const node = hitNode(selected.image);
+        const selectedPolygon = state.selectedRegion >= 0 ? state.regions[state.selectedRegion] : null;
+        const segment = selectedPolygon ? closestSegment(selected.image, selectedPolygon) : null;
+        const onEditableEdge = selectedPolygon && isEditableEdge(selected.image, selectedPolygon, segment);
+        const otherRegion = hitOtherRegionInterior(selected.image);
+        selectionOverlay.style.cursor = node || (onEditableEdge && otherRegion < 0) ? 'pointer' : hitRegion(selected.image) >= 0 ? 'move' : 'crosshair';
+        return;
+      }
+      if (interaction.pointerId !== null && event.pointerId !== interaction.pointerId) return;
+      const selected = selectionPoint(event);
+      if (!selected) return;
+      if (interaction.type === 'draw') {
+        for (const pointEvent of pointerEventSequence(event)) processDrawPoint(pointEvent);
+      } else if (interaction.type === 'node') {
+        const current = state.regions[interaction.regionIndex];
+        const dx = selected.image[0] - interaction.lastPoint[0];
+        const dy = selected.image[1] - interaction.lastPoint[1];
+        state.regions[interaction.regionIndex] = moveNode(interaction.regionIndex, interaction.nodeIndex, dx, dy);
+        interaction.lastPoint = selected.image;
+        redrawSelection();
+      } else if (interaction.type === 'region') {
+        const dx = selected.image[0] - interaction.lastPoint[0];
+        const dy = selected.image[1] - interaction.lastPoint[1];
+        if (!interaction.blockedDelta || interaction.blockedDelta[0] !== dx || interaction.blockedDelta[1] !== dy) {
+          const current = state.regions[interaction.regionIndex];
+          const geometry = { region: interaction.baseRegion, index: interaction.baseEdgeIndex, offset: interaction.regionOffset };
+          const moved = moveRegion(interaction.regionIndex, dx, dy, geometry);
+          state.regions[interaction.regionIndex] = moved;
+          if (moved !== current) interaction.regionOffset = [interaction.regionOffset[0] + moved[0][0] - current[0][0], interaction.regionOffset[1] + moved[0][1] - current[0][1]];
+          interaction.blockedDelta = moved === current && (dx || dy) ? [dx, dy] : null;
+        }
+        interaction.lastPoint = selected.image;
+        redrawSelection();
+      } else if (interaction.type === 'pan') {
+        state.viewport = constrainViewport({ zoom: interaction.before.zoom, x: interaction.before.x + event.clientX - interaction.start[0], y: interaction.before.y + event.clientY - interaction.start[1] });
+        render();
+        redrawSelection();
+      }
+      event.preventDefault();
+    }
+
+    function finishSelection(event) {
+      const interaction = state.interaction;
+      if (!interaction || !ownsInteractionPointer(event, interaction)) return;
+      if (interaction.type === 'draw') {
+        const selection = state.selection;
+        const events = pointerEventSequence(event);
+        events.forEach((pointEvent, index) => processDrawPoint(pointEvent, index === events.length - 1));
+        if (!selection.overlap && selection.points.length >= 3 && selectionSegmentTouchesExistingRegion(selection.points.at(-1), selection.points[0])) selection.overlap = true;
+        state.selection.drawing = false;
+      }
+      if (event.pointerId !== undefined) {
+        try { selectionOverlay.releasePointerCapture(event.pointerId); } catch {}
+      }
+      if ((interaction.type === 'node' || interaction.type === 'region') && !regionsEqual(state.regions[interaction.regionIndex], interaction.before)) saveHistory(interaction.historyBefore);
+      state.interaction = null;
+      state.notice = null;
+      if (interaction.type === 'draw') {
+        if (state.selection.exhausted) {
+          state.selection = null;
+          state.notice = 'tooLong';
+        }
+        else finalize(state.task, true);
+      } else if (interaction.type !== 'pan') refreshOutput();
+      selectionOverlay.style.cursor = state.spaceDown ? 'grab' : 'crosshair';
+      event.preventDefault();
+      redrawSelection();
+      render();
+    }
+
+    function clearPathTimer(task) {
+      if (task.pathTimer !== null) clearTimeout(task.pathTimer);
+      task.pathTimer = null;
+    }
+
+    function failNativePath(task) {
+      if (state.task !== task || task.pathStatus !== 'pending') return;
+      clearPathTimer(task);
+      task.pathStatus = 'failed';
+      task.filePath = null;
+      clearOutput();
+      render();
+    }
+
+    function requestNativePath(task) {
+      task.pathTimer = setTimeout(() => failNativePath(task), nativePathTimeoutMilliseconds);
+      try {
+        bridge()?.postMessage({ type: 'path-request', import_nonce: task.importNonce, file_name: task.fileName });
+      } catch {}
+    }
+
+    function createPayloadForRegions(task, regions, platform = task.platform) {
+      const sourceImage = { file_name: task.fileName, width: task.width, height: task.height };
+      if (platform === 'mac') sourceImage.file_path = task.filePath;
+      return contract.createPayload({ platform, sourceImage, regions, prompt: promptInput.value });
+    }
+
+    function isRecoverableLassoFailure(error) {
+      const messages = String(error?.message || '').split('\n').filter(Boolean);
+      return messages.length > 0
+        && messages.every((message) => /\.points_px (self-intersects|has duplicate vertices|has zero area)$/.test(message))
+        && messages.some((message) => /\.points_px (self-intersects|has duplicate vertices)$/.test(message));
+    }
+
+    function resolveSelectionPoints(task) {
+      const selection = state.selection;
+      const sampledPoints = selection?.points;
+      if (!sampledPoints || sampledPoints.length < 3 || selection.exhausted) return null;
+      const simplifiedPoints = selectionCleaner.simplifySelectionLasso(sampledPoints, selection.displayPoints);
+      try {
+        createPayloadForRegions(task, [simplifiedPoints], 'web');
+        return simplifiedPoints;
+      } catch {
+        try {
+          createPayloadForRegions(task, [sampledPoints], 'web');
+          return sampledPoints;
+        } catch (error) {
+          if (!isRecoverableLassoFailure(error)) return null;
+          for (const cycle of selectionCleaner.largestSimpleCycles(sampledPoints)) {
+            try {
+              createPayloadForRegions(task, [cycle], 'web');
+              return cycle;
+            } catch {}
+          }
+          return null;
+        }
+      }
+    }
+
+    function passesFinalSelectionThreshold(task, points) {
+      const bounds = selectionOverlay.getBoundingClientRect();
+      if (!task?.width || !task?.height || !bounds.width || !bounds.height || !points || points.length < 3) return false;
+      const displayPoints = points.map(([x, y]) => [x * bounds.width / task.width, y * bounds.height / task.height]);
+      let minX = Infinity; let minY = Infinity; let maxX = -Infinity; let maxY = -Infinity; let signedTwiceArea = 0;
+      displayPoints.forEach(([x, y], index) => {
+        minX = Math.min(minX, x); minY = Math.min(minY, y); maxX = Math.max(maxX, x); maxY = Math.max(maxY, y);
+        const [nextX, nextY] = displayPoints[(index + 1) % displayPoints.length];
+        signedTwiceArea += x * nextY - y * nextX;
+      });
+      const spaced = displayPoints.every((point, index) => selectionCleaner.isDisplayPointFarEnough(point, displayPoints[(index + 1) % displayPoints.length], 8));
+      return spaced && maxX - minX + 1e-6 >= 10 && maxY - minY + 1e-6 >= 10 && Math.abs(signedTwiceArea) / 2 >= 256;
+    }
+
+    function refreshOutput() {
+      const task = state.task;
+      clearOutput();
+      if (!task || task.imageStatus !== 'ready' || !state.regions.length || (task.platform === 'mac' && task.pathStatus !== 'ready')) {
+        render();
+        return false;
+      }
+      let payload;
+      try { payload = createPayloadForRegions(task, state.regions); }
+      catch { render(); return false; }
+      state.output = { payload };
+      jsonOutput.value = JSON.stringify(payload, null, 2);
+      download.hidden = false;
+      download.classList.remove('disabled');
+      render();
+      return true;
+    }
+
+    function prepareMaskDownload() {
+      const task = state.task;
+      if (!state.output || !task || state.interaction || state.pendingImport) return false;
+      if (state.downloadUrl) return true;
+      try {
+        const raster = contract.rasterizeMask(state.output.payload);
+        const png = contract.encodeMaskPng(task.width, task.height, raster);
+        const dimensions = pngDimensions(png);
+        state.output = {
+          ...state.output,
+          rasterWidth: task.width,
+          rasterHeight: task.height,
+          rasterPixelCount: raster.length,
+          whitePixelCount: raster.reduce((sum, value) => sum + value, 0),
+          pngWidth: dimensions.width,
+          pngHeight: dimensions.height
+        };
+        state.downloadUrl = URL.createObjectURL(new Blob([png], { type: 'image/png' }));
+        download.href = state.downloadUrl;
+        download.download = contract.maskFileName(task.fileName);
+        if (state.notice === 'exportFailed') state.notice = null;
+        render();
+        return true;
+      } catch {
+        state.notice = 'exportFailed';
+        render();
+        return false;
+      }
+    }
+
+    function refreshPromptOnly() {
+      const task = state.task;
+      if (!state.output || !task || !state.regions.length) return refreshOutput();
+      let payload;
+      try { payload = createPayloadForRegions(task, state.regions); }
+      catch { return refreshOutput(); }
+      state.output = { ...state.output, payload };
+      jsonOutput.value = JSON.stringify(payload, null, 2);
+      render();
+      return true;
+    }
+
+    function ownsInteractionPointer(event, interaction) {
+      return !event || event.pointerId === undefined || event.pointerId === interaction.pointerId;
+    }
+
+    function finalize(task, addRegion = false) {
+      if (state.task !== task || task.imageStatus !== 'ready') return false;
+      if (addRegion) {
+        if (state.selection?.outside) {
+          state.notice = 'outside';
+          state.selection = null;
+          refreshOutput();
+          return false;
+        }
+        const finalPoints = resolveSelectionPoints(task, state.selection);
+        if (!finalPoints || !passesFinalSelectionThreshold(task, finalPoints)) {
+          state.notice = 'tooSmall';
+          state.selection = null;
+          refreshOutput();
+          return false;
+        }
+        if (state.selection?.overlap) {
+          state.notice = 'overlap';
+          state.selection = null;
+          refreshOutput();
+          return false;
+        }
+        if (overlapsOtherRegion(finalPoints)) {
+          state.notice = 'overlap';
+          state.selection = null;
+          refreshOutput();
+          return false;
+        }
+        saveHistory();
+        state.regions.push(copyPoints(finalPoints));
+        state.selectedRegion = state.regions.length - 1;
+        state.selectedNode = -1;
+        state.selection = null;
+        state.notice = null;
+      }
+      return refreshOutput();
+    }
+
+    async function beginImport({ platform, import_nonce = null, file_name, image_url, origin }) {
+      const task = {
+        platform,
+        importNonce: import_nonce,
+        fileName: file_name,
+        imageUrl: image_url,
+        ownedImageUrl: platform === 'web' && typeof image_url === 'string' && image_url.startsWith('blob:') ? image_url : null,
+        ownedImageUrlRevoked: false,
+        origin,
+        imageStatus: 'pending',
+        pathStatus: platform === 'mac' ? 'pending' : 'not-applicable',
+        pathTimer: null,
+        filePath: null,
+        nativeReleaseSent: false,
+        width: null,
+        height: null
+      };
+      disposeTask(state.pendingImport);
+      state.pendingImport = task;
+      canvasViewport.classList.remove('dragging');
+      state.notice = null;
+      render();
+      try {
+        task.imageLoad = loadImage(image_url);
+        const image = await task.imageLoad.promise;
+        task.imageLoad = null;
+        if (state.pendingImport !== task) {
+          disposeTask(task);
+          return false;
+        }
+        disposeTask(state.task);
+        clearOutput();
+        state.task = task;
+        state.pendingImport = null;
+        resetSelection();
+        state.notice = null;
+        promptInput.value = '';
+        state.pathRequestNonce = platform === 'mac' ? import_nonce : null;
+        state.acceptedPathResponseNonce = null;
+        task.width = image.naturalWidth;
+        task.height = image.naturalHeight;
+        task.imageStatus = 'ready';
+        preview.src = image_url;
+        notifyWebTaskStarted(task);
+        render();
+        fitViewport();
+        redrawSelection();
+        if (platform === 'mac') requestNativePath(task);
+        render();
+        return true;
+      } catch {
+        if (state.pendingImport !== task) {
+          disposeTask(task);
+          return false;
+        }
+        state.pendingImport = null;
+        disposeTask(task);
+        task.imageUrl = null;
+        if (state.task) state.notice = 'importPreserved';
+        else {
+          task.imageStatus = 'failed';
+          state.task = task;
+          state.notice = null;
+        }
+        render();
+        return false;
+      }
+    }
+
+    async function importWebFile(file) {
+      if (!file) return;
+      const imageUrl = URL.createObjectURL(file);
+      await beginImport({ platform: 'web', file_name: file.name, image_url: imageUrl, origin: 'web-file-input' });
+    }
+
+    function acceptNativePath(response) {
+      const task = state.task;
+      if (!task || task.platform !== 'mac' || task.pathStatus !== 'pending' || task.importNonce !== response?.import_nonce || task.fileName !== response?.file_name || typeof response.file_path !== 'string' || !response.file_path.startsWith('/') || !response.file_path.endsWith(`/${task.fileName}`)) {
+        state.ignoredPathResponses += 1;
+        state.lastIgnoredPathResponseNonce = response?.import_nonce ?? null;
+        return false;
+      }
+      clearPathTimer(task);
+      task.filePath = response.file_path;
+      task.pathStatus = 'ready';
+      state.acceptedPathResponseNonce = response.import_nonce;
+      refreshOutput();
+      redrawSelection();
+      render();
+      return true;
+    }
+
+    function copyResult() {
+      if (!state.output) return { allowed: false, reason: state.task?.platform === 'mac' && state.task.pathStatus === 'pending' ? 'path-pending' : 'result-unavailable' };
+      return { allowed: true, json: JSON.stringify(state.output.payload) };
+    }
+
+    function nativeCopy(text) {
+      if (state.task?.platform !== 'mac' || !bridge()) return Promise.resolve(false);
+      const copyNonce = crypto.randomUUID?.() ?? `${Date.now()}-${Math.random()}`;
+      return new Promise((resolve) => {
+        const timer = setTimeout(() => {
+          state.pendingNativeCopies.delete(copyNonce);
+          resolve(false);
+        }, 1000);
+        state.pendingNativeCopies.set(copyNonce, (ok) => {
+          clearTimeout(timer);
+          resolve(ok);
+        });
+        try {
+          bridge()?.postMessage({ type: 'copy-json', copy_nonce: copyNonce, text });
+        } catch {
+          clearTimeout(timer);
+          state.pendingNativeCopies.delete(copyNonce);
+          resolve(false);
+        }
+      });
+    }
+
+    function acceptNativeCopy(response) {
+      const resolve = state.pendingNativeCopies.get(response?.copy_nonce);
+      if (!resolve) return false;
+      state.pendingNativeCopies.delete(response.copy_nonce);
+      resolve(response.ok === true);
+      return true;
+    }
+
+    async function copyOutput(event) {
+      const execution = beginResultExecution('json', event);
+      if (!execution.allowed) return;
+      const result = copyResult();
+      if (!result.allowed) {
+        finishResultExecution(execution, 'clipboard_rejected');
+        state.notice = 'unavailable';
+        render();
+        return;
+      }
+      state.copyMethod = null;
+      let copied = false;
+      try {
+        await navigator.clipboard.writeText(result.json);
+        copied = true;
+        state.copyMethod = 'clipboard';
+      } catch {
+        if (await nativeCopy(result.json)) {
+          copied = true;
+          state.copyMethod = 'native-bridge';
+        } else state.copyMethod = 'failed';
+      }
+      const current = copyResult();
+      const changed = copied && (!current.allowed || current.json !== result.json);
+      if (changed) state.copyMethod = null;
+      finishResultExecution(execution, copied ? 'clipboard_fulfilled' : 'clipboard_rejected');
+      state.notice = changed ? 'copyChanged' : copied ? 'copied' : 'copyFailed';
+      render();
+    }
+
+    function setViewport(viewport) {
+      if (state.interaction?.type === 'draw') return snapshot();
+      const zoom = Number(viewport?.zoom);
+      const x = Number(viewport?.x);
+      const y = Number(viewport?.y);
+      if (!Number.isFinite(zoom) || zoom <= 0 || !Number.isFinite(x) || !Number.isFinite(y)) throw new Error('invalid viewport');
+      state.viewport = { zoom, x, y };
+      render();
+      redrawSelection();
+      return snapshot();
+    }
+
+    function fittedZoom(task) {
+      const width = canvasViewport.clientWidth || task.width;
+      const height = canvasViewport.clientHeight || task.height;
+      return Math.max(1e-6, Math.min(1, width / task.width, height / task.height));
+    }
+
+    function fitViewport() {
+      const task = state.task;
+      if (!task?.width || !task?.height || state.interaction?.type === 'draw') return;
+      const width = canvasViewport.clientWidth || task.width;
+      const height = canvasViewport.clientHeight || task.height;
+      const zoom = fittedZoom(task);
+      state.viewport = {
+        zoom,
+        x: Math.round((width - task.width * zoom) / 2),
+        y: Math.round((height - task.height * zoom) / 2)
+      };
+      render();
+      redrawSelection();
+    }
+
+    function zoomAt(nextZoom, clientX = null, clientY = null) {
+      const task = state.task;
+      if (!task || state.interaction?.type === 'draw') return;
+      const zoom = Math.max(Math.min(.1, fittedZoom(task)), Math.min(8, nextZoom));
+      const bounds = canvasViewport.getBoundingClientRect();
+      const anchorX = clientX === null ? bounds.width / 2 : clientX - bounds.left;
+      const anchorY = clientY === null ? bounds.height / 2 : clientY - bounds.top;
+      const sourceX = (anchorX - state.viewport.x) / state.viewport.zoom;
+      const sourceY = (anchorY - state.viewport.y) / state.viewport.zoom;
+      state.viewport = constrainViewport({ zoom, x: anchorX - sourceX * zoom, y: anchorY - sourceY * zoom });
+      render();
+      redrawSelection();
+    }
+
+    function constrainViewport(viewport) {
+      const task = state.task;
+      if (!task?.width || !task?.height) return viewport;
+      const width = canvasViewport.clientWidth || task.width;
+      const height = canvasViewport.clientHeight || task.height;
+      const scaledWidth = task.width * viewport.zoom;
+      const scaledHeight = task.height * viewport.zoom;
+      return {
+        zoom: viewport.zoom,
+        x: scaledWidth <= width ? (width - scaledWidth) / 2 : Math.max(width - scaledWidth, Math.min(0, viewport.x)),
+        y: scaledHeight <= height ? (height - scaledHeight) / 2 : Math.max(height - scaledHeight, Math.min(0, viewport.y))
+      };
+    }
+
+    function panViewport(deltaX, deltaY) {
+      if (!state.task || state.interaction?.type === 'draw' || (!deltaX && !deltaY)) return;
+      state.viewport = constrainViewport({
+        zoom: state.viewport.zoom,
+        x: state.viewport.x - deltaX,
+        y: state.viewport.y - deltaY
+      });
+      render();
+      redrawSelection();
+    }
+
+    function updateCanvasScrollbars() {
+      const task = state.task;
+      const ready = task?.imageStatus === 'ready';
+      const width = canvasViewport.clientWidth;
+      const height = canvasViewport.clientHeight;
+      const scaledWidth = ready ? task.width * state.viewport.zoom : 0;
+      const scaledHeight = ready ? task.height * state.viewport.zoom : 0;
+      const updateAxis = (bar, thumb, viewportSize, scaledSize, position) => {
+        const overflow = scaledSize - viewportSize;
+        bar.hidden = !ready || overflow <= .5;
+        if (bar.hidden) return;
+        const trackSize = bar === horizontalScrollbar ? bar.clientWidth : bar.clientHeight;
+        const thumbSize = Math.max(34, trackSize * viewportSize / scaledSize);
+        const travel = Math.max(0, trackSize - thumbSize);
+        const offset = travel * Math.max(0, Math.min(1, -position / overflow));
+        if (bar === horizontalScrollbar) {
+          thumb.style.width = `${thumbSize}px`;
+          thumb.style.transform = `translateX(${offset}px)`;
+        } else {
+          thumb.style.height = `${thumbSize}px`;
+          thumb.style.transform = `translateY(${offset}px)`;
+        }
+        bar.setAttribute('aria-valuemin', '0');
+        bar.setAttribute('aria-valuemax', String(Math.round(overflow)));
+        bar.setAttribute('aria-valuenow', String(Math.round(Math.max(0, Math.min(overflow, -position)))));
+      };
+      updateAxis(horizontalScrollbar, horizontalScrollThumb, width, scaledWidth, state.viewport.x);
+      updateAxis(verticalScrollbar, verticalScrollThumb, height, scaledHeight, state.viewport.y);
+    }
+
+    function beginScrollbarDrag(axis, event) {
+      if (state.interaction?.type === 'draw') {
+        event.preventDefault();
+        event.stopPropagation();
+        return;
+      }
+      const bar = axis === 'x' ? horizontalScrollbar : verticalScrollbar;
+      const thumb = axis === 'x' ? horizontalScrollThumb : verticalScrollThumb;
+      state.scrollbarDrag = {
+        axis,
+        pointerId: event.pointerId,
+        start: axis === 'x' ? event.clientX : event.clientY,
+        before: { ...state.viewport },
+        trackSize: axis === 'x' ? bar.clientWidth : bar.clientHeight,
+        thumbSize: axis === 'x' ? thumb.getBoundingClientRect().width : thumb.getBoundingClientRect().height
+      };
+      try { thumb.setPointerCapture(event.pointerId); } catch {}
+      event.preventDefault();
+      event.stopPropagation();
+    }
+
+    function moveScrollbar(event) {
+      const drag = state.scrollbarDrag;
+      if (!drag || state.interaction?.type === 'draw' || event.pointerId !== drag.pointerId) return;
+      const task = state.task;
+      const viewportSize = drag.axis === 'x' ? canvasViewport.clientWidth : canvasViewport.clientHeight;
+      const scaledSize = (drag.axis === 'x' ? task.width : task.height) * drag.before.zoom;
+      const overflow = Math.max(0, scaledSize - viewportSize);
+      const travel = Math.max(1, drag.trackSize - drag.thumbSize);
+      const delta = (drag.axis === 'x' ? event.clientX : event.clientY) - drag.start;
+      const next = { ...drag.before, [drag.axis]: drag.before[drag.axis] - delta * overflow / travel };
+      state.viewport = constrainViewport(next);
+      render();
+      redrawSelection();
+      event.preventDefault();
+    }
+
+    function finishScrollbarDrag(event) {
+      if (!state.scrollbarDrag || event.pointerId !== state.scrollbarDrag.pointerId) return;
+      const thumb = state.scrollbarDrag.axis === 'x' ? horizontalScrollThumb : verticalScrollThumb;
+      state.scrollbarDrag = null;
+      try { thumb.releasePointerCapture(event.pointerId); } catch {}
+      event.preventDefault();
+    }
+
+    function keyboardScroll(axis, event) {
+      if (!state.task || state.interaction?.type === 'draw') return;
+      const viewportSize = axis === 'x' ? canvasViewport.clientWidth : canvasViewport.clientHeight;
+      const scaledSize = (axis === 'x' ? state.task.width : state.task.height) * state.viewport.zoom;
+      const overflow = Math.max(0, scaledSize - viewportSize);
+      const current = Math.max(0, Math.min(overflow, -(axis === 'x' ? state.viewport.x : state.viewport.y)));
+      const direction = axis === 'x' ? (event.key === 'ArrowLeft' ? -1 : event.key === 'ArrowRight' ? 1 : 0) : (event.key === 'ArrowUp' ? -1 : event.key === 'ArrowDown' ? 1 : 0);
+      let next = current + direction * 40;
+      if (event.key === 'PageUp') next = current - viewportSize * .8;
+      else if (event.key === 'PageDown') next = current + viewportSize * .8;
+      else if (event.key === 'Home') next = 0;
+      else if (event.key === 'End') next = overflow;
+      else if (!direction) return;
+      state.viewport = constrainViewport({ ...state.viewport, [axis]: -Math.max(0, Math.min(overflow, next)) });
+      render();
+      redrawSelection();
+      event.preventDefault();
+    }
+
+    function undo() {
+      if (state.interaction) return;
+      const previous = state.history.pop();
+      if (!previous) return;
+      state.regions = previous;
+      state.selectedRegion = Math.min(state.selectedRegion, state.regions.length - 1);
+      state.selectedNode = -1;
+      state.selection = null;
+      state.notice = null;
+      refreshOutput();
+      redrawSelection();
+      render();
+    }
+
+    function clearRegions() {
+      if (state.interaction || !state.regions.length) return;
+      saveHistory();
+      state.regions = [];
+      state.selectedRegion = -1;
+      state.selectedNode = -1;
+      state.selection = null;
+      state.notice = null;
+      clearOutput();
+      redrawSelection();
+      render();
+    }
+
+    function deleteSelectedRegion() {
+      if (state.interaction || state.selectedRegion < 0) return;
+      saveHistory();
+      state.regions.splice(state.selectedRegion, 1);
+      state.selectedRegion = -1;
+      state.selectedNode = -1;
+      regionMenu.hidden = true;
+      refreshOutput();
+      redrawSelection();
+      render();
+    }
+
+    function deleteSelectedNode() {
+      if (state.interaction || state.selectedRegion < 0 || state.selectedNode < 0 || state.regions[state.selectedRegion].length <= 3) return false;
+      const candidate = copyPoints(state.regions[state.selectedRegion]);
+      candidate.splice(state.selectedNode, 1);
+      if (!validEditedRegion(candidate, state.selectedRegion)) return false;
+      saveHistory();
+      state.regions[state.selectedRegion] = candidate;
+      state.selectedNode = -1;
+      refreshOutput();
+      redrawSelection();
+      render();
+      return true;
+    }
+
+    function showContextMenu(event) {
+      const selected = selectionPoint(event);
+      if (!selected || !state.task) return;
+      event.preventDefault();
+      const node = hitNode(selected.image);
+      if (node) {
+        state.selectedRegion = node.regionIndex;
+        state.selectedNode = node.nodeIndex;
+        deleteSelectedNode();
+        return;
+      }
+      const regionIndex = hitRegion(selected.image);
+      if (regionIndex < 0) { regionMenu.hidden = true; return; }
+      state.selectedRegion = regionIndex;
+      state.selectedNode = -1;
+      const bounds = workspace.getBoundingClientRect();
+      regionMenu.style.left = `${Math.max(8, Math.min(bounds.width - 145, event.clientX - bounds.left))}px`;
+      regionMenu.style.top = `${Math.max(8, Math.min(bounds.height - 55, event.clientY - bounds.top))}px`;
+      regionMenu.hidden = false;
+      redrawSelection();
+    }
+
+    function moveToolbar(event) {
+      if (!state.toolbarPosition || (event.pointerId !== undefined && event.pointerId !== state.toolbarPosition.pointerId)) return;
+      const bounds = workspace.getBoundingClientRect();
+      const left = Math.max(8, Math.min(bounds.width - toolbar.offsetWidth - 8, event.clientX - bounds.left - state.toolbarPosition.offsetX));
+      const top = Math.max(8, Math.min(bounds.height - toolbar.offsetHeight - 8, event.clientY - bounds.top - state.toolbarPosition.offsetY));
+      toolbar.style.left = `${left}px`;
+      toolbar.style.top = `${top}px`;
+      toolbar.style.bottom = 'auto';
+      toolbar.style.transform = 'none';
+    }
+
+    function clampToolbar() {
+      if (!toolbar.style.left || toolbar.style.transform !== 'none') return;
+      const bounds = workspace.getBoundingClientRect();
+      toolbar.style.left = `${Math.max(8, Math.min(bounds.width - toolbar.offsetWidth - 8, parseFloat(toolbar.style.left) || 8))}px`;
+      toolbar.style.top = `${Math.max(8, Math.min(bounds.height - toolbar.offsetHeight - 8, parseFloat(toolbar.style.top) || 8))}px`;
+    }
+
+    function snapToolbar() {
+      if (!toolbar.style.left || toolbar.style.transform !== 'none') return;
+      const bounds = workspace.getBoundingClientRect();
+      const left = parseFloat(toolbar.style.left) || 8;
+      const top = parseFloat(toolbar.style.top) || 8;
+      const right = bounds.width - left - toolbar.offsetWidth;
+      const bottom = bounds.height - top - toolbar.offsetHeight;
+      const nearest = Math.min(left, top, right, bottom);
+      if (nearest === left) toolbar.style.left = '8px';
+      else if (nearest === right) toolbar.style.left = `${bounds.width - toolbar.offsetWidth - 8}px`;
+      else if (nearest === top) toolbar.style.top = '8px';
+      else toolbar.style.top = `${bounds.height - toolbar.offsetHeight - 8}px`;
+      clampToolbar();
+    }
+
+    function finishToolbarDrag(event) {
+      if (!state.toolbarPosition || (event?.pointerId !== undefined && event.pointerId !== state.toolbarPosition.pointerId)) return;
+      const pointerId = state.toolbarPosition.pointerId;
+      state.toolbarPosition = null;
+      try { toolbarHandle.releasePointerCapture(pointerId); } catch {}
+      snapToolbar();
+    }
+
+    function cancelAuxiliaryDrags() {
+      if (state.toolbarPosition) {
+        const pointerId = state.toolbarPosition.pointerId;
+        state.toolbarPosition = null;
+        try { toolbarHandle.releasePointerCapture(pointerId); } catch {}
+        snapToolbar();
+      }
+      if (state.scrollbarDrag) {
+        const drag = state.scrollbarDrag;
+        const thumb = drag.axis === 'x' ? horizontalScrollThumb : verticalScrollThumb;
+        state.scrollbarDrag = null;
+        try { thumb.releasePointerCapture(drag.pointerId); } catch {}
+      }
+    }
+
+    function releaseSpacePan() {
+      state.spaceDown = false;
+      if (!state.interaction) selectionOverlay.style.cursor = 'crosshair';
+    }
+
+    function isSupportedImageDrag(event) {
+      const transfer = event.dataTransfer;
+      if (!transfer || !Array.from(transfer.types ?? []).includes('Files')) return false;
+      const [fileItem] = Array.from(transfer.items ?? []).filter((item) => item.kind === 'file');
+      return !fileItem || !fileItem.type || supportedImageTypes.has(fileItem.type);
+    }
+
+    function refreshEmptyCanvasTitle() {
+      if (!dropTitle) return;
+      const english = state.language === 'en';
+      if (webShell && canvasViewport.classList.contains('dragging')) {
+        dropTitle.textContent = english ? 'Release to open the image' : '松开即可打开图片';
+        return;
+      }
+      if (webShell && (emptyCanvasHovered || emptyCanvas.matches(':hover'))) {
+        dropTitle.textContent = english ? 'Click anywhere to open an image' : '点击任意位置打开图片';
+        return;
+      }
+      dropTitle.textContent = english ? 'Drop an image here, or open one' : '拖入图片，或打开图片';
+    }
+
+    function setDropReady(ready) {
+      canvasViewport.classList.toggle('dragging', ready);
+      if (webShell) refreshEmptyCanvasTitle();
+    }
+
+    function updateFocusLabel() {
+      if (!focusButton) return;
+      const english = state.language === 'en';
+      const label = editorFocused
+        ? (english ? 'Exit focus' : '退出专注')
+        : (english ? 'Focus editor' : '专注编辑');
+      const text = focusButton.querySelector('span');
+      if (text) text.textContent = label;
+      focusButton.setAttribute('aria-pressed', String(editorFocused));
+      focusButton.setAttribute('aria-label', label);
+    }
+
+    function setFocusState(active) {
+      editorFocused = active === true;
+      updateFocusLabel();
+    }
+
+    function setLanguage(language) {
+      state.language = language;
+      const english = language === 'en';
+      const values = {
+        dropTitle: english ? 'Drop an image here, or open one' : '拖入图片，或打开图片', fileFormats: english ? 'PNG, JPG/JPEG, WebP' : 'PNG、JPG、JPEG、WebP', chooseImage: english ? 'Open Image' : '打开图片',
+        undo: english ? 'Undo' : '撤销', clear: english ? 'Clear All' : '清空', fit: english ? 'Fit' : '适应', actualSize: english ? 'Actual Size' : '原尺寸', deleteRegion: english ? 'Delete Area' : '删除区域',
+        guideTitle: english ? 'Outline it.<br> Your agent takes over.' : '你圈一下，<br>剩下交给Agent', guideSubtitle: english ? 'Skip Photoshop.<br> AI handles edits and masks.' : '告别Photoshop，<br>把图片修改和蒙版处理交给AI',
+        stepImport: english ? 'Drop an image' : '拖入图片', stepCircle: english ? 'Outline the area to change' : '圈出要改的地方', stepSend: english ? 'Copy JSON for your AI agent' : '复制数据发给Agent',
+        guideUse: english ? 'Good for:' : '适合：', guideCaseReplace: english ? 'Replacing parts of an image' : '替换局部', guideCaseDetail: english ? 'Editing details' : '修改细节', guideCaseRemove: english ? 'Removing unwanted areas' : '消除区域',
+        jsonPreview: english ? 'JSON preview' : 'JSON 预览', promptTitle: english ? 'What should your agent do?' : '想让 Agent 做什么？', promptOptional: english ? 'Optional' : '可选', copyJson: english ? 'Copy JSON' : '复制 JSON', exportMask: english ? 'Export Mask (PNG)' : '导出黑白蒙版 PNG'
+      };
+      document.querySelectorAll('[data-i18n]').forEach((element) => { if (values[element.dataset.i18n]) element.innerHTML = values[element.dataset.i18n]; });
+      document.documentElement.lang = english ? 'en' : 'zh-CN';
+      promptInput.placeholder = english ? 'Example:\nKeep the mountain and remove the clouds.' : '例如：\n保留山体，去掉天空中的云。';
+      preview.alt = english ? 'Image being edited' : '导入图片预览';
+      selectionOverlay.setAttribute('aria-label', english ? 'Image area selector' : '图片圈选区域');
+      toolbarHandle.setAttribute('aria-label', english ? 'Move toolbar' : '移动控制栏');
+      zoomOutButton.setAttribute('aria-label', english ? 'Zoom out' : '缩小');
+      zoomInButton.setAttribute('aria-label', english ? 'Zoom in' : '放大');
+      actualSizeButton.setAttribute('aria-label', english ? 'Show at actual size' : '按原始像素大小显示');
+      actualSizeButton.setAttribute('title', english ? '1 image pixel = 1 screen pixel' : '1 个原图像素 = 1 个屏幕像素');
+      horizontalScrollbar.setAttribute('aria-label', english ? 'Pan image horizontally' : '水平移动图片');
+      verticalScrollbar.setAttribute('aria-label', english ? 'Pan image vertically' : '垂直移动图片');
+      languageToggle.querySelector('span').textContent = english ? '中文' : 'English';
+      languageToggle.setAttribute('aria-label', english ? 'Switch to Chinese' : '切换为 English');
+      refreshEmptyCanvasTitle();
+      updateFocusLabel();
+      renderedJson = null;
+      render();
+    }
+
+    function snapshot() {
+      const task = state.task;
+      const output = state.output;
+      return {
+        import_nonce: task?.importNonce ?? null,
+        origin: task?.origin ?? null,
+        platform: task?.platform ?? null,
+        file_name: task?.fileName ?? null,
+        current_file_path: task?.filePath ?? null,
+        image_status: task?.imageStatus ?? 'idle',
+        path_status: task?.pathStatus ?? 'idle',
+        status: status.textContent,
+        notice: state.notice ? t(state.notice) : null,
+        copy_method: state.copyMethod,
+        path_request_nonce: state.pathRequestNonce,
+        accepted_path_response_nonce: state.acceptedPathResponseNonce,
+        ignored_path_responses: state.ignoredPathResponses,
+        last_ignored_path_response_nonce: state.lastIgnoredPathResponseNonce,
+        viewport: { ...state.viewport },
+        editor_regions: copyRegions(),
+        selected_region: state.selectedRegion,
+        selected_node: state.selectedNode,
+        public_json: output?.payload ?? null,
+        mask: output?.pngWidth ? {
+          raster_width: output.rasterWidth,
+          raster_height: output.rasterHeight,
+          raster_pixel_count: output.rasterPixelCount,
+          white_pixel_count: output.whitePixelCount,
+          png_width: output.pngWidth,
+          png_height: output.pngHeight
+        } : null
+      };
+    }
+
+    function cancelCurrentInteraction(event = null) {
+      const interaction = state.interaction;
+      if (!interaction) {
+        state.selectedRegion = -1;
+        state.selectedNode = -1;
+        regionMenu.hidden = true;
+        redrawSelection();
+        render();
+        return;
+      }
+      if (!ownsInteractionPointer(event, interaction)) return;
+      if (interaction.type === 'node' || interaction.type === 'region') state.regions[interaction.regionIndex] = interaction.before;
+      if (interaction.type === 'pan') state.viewport = { ...interaction.before };
+      if (interaction.selectedBefore) {
+        state.selectedRegion = interaction.selectedBefore.region;
+        state.selectedNode = interaction.selectedBefore.node;
+      }
+      state.selection = null;
+      state.interaction = null;
+      regionMenu.hidden = true;
+      selectionOverlay.style.cursor = state.spaceDown ? 'grab' : 'crosshair';
+      const pointerId = event?.pointerId ?? interaction.pointerId;
+      if (pointerId !== null && pointerId !== undefined) {
+        try { selectionOverlay.releasePointerCapture(pointerId); } catch {}
+      }
+      redrawSelection();
+      if (interaction.type === 'node' || interaction.type === 'region') refreshPromptOnly();
+      else render();
+    }
+
+    fileInput.addEventListener('change', async () => {
+      await importWebFile(fileInput.files[0]);
+      fileInput.value = '';
+    });
+    document.querySelectorAll('label[for="source-file"]').forEach((label) => label.addEventListener('keydown', (event) => {
+      if (event.key !== 'Enter' && event.key !== ' ') return;
+      event.preventDefault();
+      fileInput.click();
+    }));
+    copyButton.addEventListener('click', copyOutput);
+    function activateMaskDownload(event) {
+      const keyboardExecution = event.type === 'click' ? pendingMaskKeyboardExecution : null;
+      if (keyboardExecution) pendingMaskKeyboardExecution = null;
+      const execution = keyboardExecution ?? beginResultExecution('mask', event);
+      if (!execution.allowed) {
+        event.preventDefault();
+        return;
+      }
+      if (!state.output || state.pendingImport || state.interaction || download.classList.contains('disabled')) {
+        event.preventDefault();
+        finishResultExecution(execution, 'handoff_failed');
+        return;
+      }
+      // Prepare synchronously inside the trusted activation, then let this
+      // same click/default action reach WebKit or the browser download path.
+      if (!state.downloadUrl && !prepareMaskDownload()) {
+        event.preventDefault();
+        finishResultExecution(execution, 'handoff_failed');
+        return;
+      }
+      if (event.type === 'keydown' && execution.adapter) {
+        pendingMaskKeyboardExecution = execution;
+        setTimeout(() => {
+          if (pendingMaskKeyboardExecution !== execution) return;
+          pendingMaskKeyboardExecution = null;
+          finishResultExecution(execution, 'handoff_failed');
+        }, 0);
+        return;
+      }
+      const validDownload = download.href.startsWith('blob:') && Boolean(download.download) && !event.defaultPrevented;
+      finishResultExecution(execution, validDownload ? 'submitted_to_browser' : 'handoff_failed');
+      if (!validDownload) event.preventDefault();
+    }
+    download.addEventListener('click', activateMaskDownload);
+    download.addEventListener('keydown', (event) => {
+      if (event.key !== 'Enter') return;
+      activateMaskDownload(event);
+    });
+    const downEvent = window.PointerEvent ? 'pointerdown' : 'mousedown';
+    const moveEvent = window.PointerEvent ? 'pointermove' : 'mousemove';
+    const upEvent = window.PointerEvent ? 'pointerup' : 'mouseup';
+    selectionOverlay.addEventListener(downEvent, beginSelection);
+    selectionOverlay.addEventListener(moveEvent, continueSelection);
+    selectionOverlay.addEventListener(upEvent, finishSelection);
+    selectionOverlay.addEventListener('contextmenu', showContextMenu);
+    selectionOverlay.addEventListener('pointercancel', cancelCurrentInteraction);
+    emptyCanvas.addEventListener('pointerenter', () => { emptyCanvasHovered = true; refreshEmptyCanvasTitle(); });
+    emptyCanvas.addEventListener('pointerleave', () => { emptyCanvasHovered = false; refreshEmptyCanvasTitle(); });
+    emptyCanvas.addEventListener('click', (event) => {
+      if (!webShell || event.target.closest('label[for="source-file"]')) return;
+      fileInput.click();
+    });
+    canvasViewport.addEventListener('dragenter', (event) => {
+      if (webShell && !isSupportedImageDrag(event)) {
+        if (event.dataTransfer) event.dataTransfer.dropEffect = 'none';
+        setDropReady(false);
+        return;
+      }
+      event.preventDefault();
+      setDropReady(true);
+    });
+    canvasViewport.addEventListener('dragover', (event) => {
+      if (webShell) {
+        const ready = isSupportedImageDrag(event);
+        if (event.dataTransfer) event.dataTransfer.dropEffect = ready ? 'copy' : 'none';
+        if (!ready) {
+          setDropReady(false);
+          return;
+        }
+      }
+      event.preventDefault();
+      setDropReady(true);
+    });
+    canvasViewport.addEventListener('dragleave', (event) => {
+      if (!canvasViewport.contains(event.relatedTarget)) setDropReady(false);
+    });
+    canvasViewport.addEventListener('drop', (event) => {
+      event.preventDefault();
+      setDropReady(false);
+      importWebFile(event.dataTransfer?.files?.[0]);
+    });
+    canvasViewport.addEventListener('wheel', (event) => {
+      if (event.ctrlKey || event.metaKey) {
+        if (!state.task) return;
+        event.preventDefault();
+        if (state.interaction?.type !== 'draw') {
+          zoomAt(state.viewport.zoom * (event.deltaY < 0 ? 1.12 : .89), event.clientX, event.clientY);
+        }
+        return;
+      }
+      if (state.interaction?.type === 'draw') {
+        event.preventDefault();
+        return;
+      }
+      const shiftHorizontal = event.shiftKey && event.deltaX === 0;
+      const rawX = shiftHorizontal ? event.deltaY : event.deltaX;
+      const rawY = shiftHorizontal ? 0 : event.deltaY;
+      const dx = rawX * (event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? canvasViewport.clientWidth : 1);
+      const dy = rawY * (event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? canvasViewport.clientHeight : 1);
+      const overflowX = (state.task?.width || 0) * state.viewport.zoom - canvasViewport.clientWidth;
+      const overflowY = (state.task?.height || 0) * state.viewport.zoom - canvasViewport.clientHeight;
+      if (webShell && overflowX <= .5 && overflowY <= .5) {
+        event.preventDefault();
+        webAdapter()?.requestPageScroll?.(dx, dy);
+        return;
+      }
+      if (!state.task) return;
+      event.preventDefault();
+      panViewport(dx, dy);
+    }, { passive: false });
+    promptInput.addEventListener('input', () => { state.notice = null; refreshPromptOnly(); });
+    undoButton.addEventListener('click', undo);
+    clearButton.addEventListener('click', clearRegions);
+    fitButton.addEventListener('click', fitViewport);
+    actualSizeButton.addEventListener('click', () => zoomAt(1));
+    zoomOutButton.addEventListener('click', () => zoomAt(state.viewport.zoom / 1.2));
+    zoomInButton.addEventListener('click', () => zoomAt(state.viewport.zoom * 1.2));
+    horizontalScrollThumb.addEventListener('pointerdown', (event) => beginScrollbarDrag('x', event));
+    verticalScrollThumb.addEventListener('pointerdown', (event) => beginScrollbarDrag('y', event));
+    horizontalScrollThumb.addEventListener('pointermove', moveScrollbar);
+    verticalScrollThumb.addEventListener('pointermove', moveScrollbar);
+    horizontalScrollThumb.addEventListener('pointerup', finishScrollbarDrag);
+    verticalScrollThumb.addEventListener('pointerup', finishScrollbarDrag);
+    horizontalScrollThumb.addEventListener('pointercancel', finishScrollbarDrag);
+    verticalScrollThumb.addEventListener('pointercancel', finishScrollbarDrag);
+    horizontalScrollbar.addEventListener('keydown', (event) => keyboardScroll('x', event));
+    verticalScrollbar.addEventListener('keydown', (event) => keyboardScroll('y', event));
+    deleteRegionButton.addEventListener('click', deleteSelectedRegion);
+    toolbarHandle.addEventListener('pointerdown', (event) => {
+      if (event.button !== 0 || state.toolbarPosition || state.interaction) return;
+      const bounds = toolbar.getBoundingClientRect();
+      state.toolbarPosition = { offsetX: event.clientX - bounds.left, offsetY: event.clientY - bounds.top, pointerId: event.pointerId };
+      toolbarHandle.setPointerCapture(event.pointerId);
+      event.preventDefault();
+    });
+    toolbarHandle.addEventListener('pointermove', moveToolbar);
+    toolbarHandle.addEventListener('pointerup', finishToolbarDrag);
+    toolbarHandle.addEventListener('pointercancel', finishToolbarDrag);
+    toolbarHandle.addEventListener('lostpointercapture', finishToolbarDrag);
+    document.addEventListener('pointerdown', (event) => { if (!regionMenu.hidden && !regionMenu.contains(event.target)) regionMenu.hidden = true; });
+    document.addEventListener('keydown', (event) => {
+      const activeElement = document.activeElement;
+      const editingText = activeElement instanceof HTMLElement && ((/^(INPUT|TEXTAREA)$/.test(activeElement.tagName) && !activeElement.readOnly && !activeElement.disabled) || activeElement.isContentEditable);
+      const interactiveTarget = event.target instanceof Element && Boolean(event.target.closest('button,a[href],label,select,input,textarea,[contenteditable="true"]'));
+      if (event.code === 'Space' && !editingText && !interactiveTarget) { state.spaceDown = true; selectionOverlay.style.cursor = 'grab'; event.preventDefault(); return; }
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'z' && !editingText) { event.preventDefault(); undo(); return; }
+      if (event.key === 'Escape') {
+        cancelCurrentInteraction();
+        cancelAuxiliaryDrags();
+        if (webShell && editorFocused) webAdapter()?.requestFocus?.(false);
+        return;
+      }
+      if (!editingText && (event.key === 'Delete' || event.key === 'Backspace')) {
+        event.preventDefault();
+        if (state.selectedNode >= 0) deleteSelectedNode();
+        else deleteSelectedRegion();
+      }
+    });
+    document.addEventListener('keyup', (event) => { if (event.code === 'Space') releaseSpacePan(); });
+    window.addEventListener('blur', () => { if (state.interaction) cancelCurrentInteraction(); cancelAuxiliaryDrags(); releaseSpacePan(); });
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden) return;
+      if (state.interaction) cancelCurrentInteraction();
+      cancelAuxiliaryDrags();
+      releaseSpacePan();
+    });
+    window.addEventListener('resize', handleWindowResize);
+    window.addEventListener('unload', () => { disposeTask(state.task); disposeTask(state.pendingImport); });
+    languageToggle.hidden = !bridge();
+    if (focusButton) focusButton.hidden = !webShell;
+    languageToggle.addEventListener('click', () => {
+      const language = state.language === 'zh' ? 'en' : 'zh';
+      setLanguage(language);
+      bridge()?.postMessage({ type: 'language-preference', language });
+    });
+    focusButton?.addEventListener('click', () => {
+      if (!webShell) return;
+      webAdapter()?.requestFocus?.(!editorFocused);
+    });
+    window.FlashMaskP0 = {
+      importWebFile,
+      beginMacImport: (request) => beginImport({ platform: 'mac', import_nonce: request.import_nonce, file_name: request.file_name, image_url: request.image_url, origin: request.origin }),
+      setNativeDragHighlight: (request) => canvasViewport.classList.toggle('dragging', request?.active === true),
+      acceptNativePath,
+      acceptNativeCopy,
+      copyResult,
+      setViewport,
+      fitViewport,
+      prepareMaskDownload,
+      undo,
+      setLanguage,
+      setFocusState,
+      clearRegions,
+      snapshot
+    };
+    setLanguage(state.language);
+  })();
+</script>
+</body>
+</html>

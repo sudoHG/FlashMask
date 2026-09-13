@@ -1,0 +1,23 @@
+{
+  "mask_spec_version": "1.0",
+  "instruction": "This JSON identifies areas the user selected in the source image. Each polygon marks one selected area; multiple polygons form a combined selection; the first and last points are connected automatically. Interpret the selected areas and any `prompt` in the context of the current conversation. If `prompt` is present, it expresses the user's intent regarding the image.",
+  "source_image": {
+    "file_name": "street.jpg",
+    "width": 1920,
+    "height": 1080,
+    "file_path": "/tmp/flash-mask-contract/street.jpg"
+  },
+  "coordinate_system": {
+    "origin": "top-left",
+    "x_direction": "right",
+    "y_direction": "down"
+  },
+  "regions": [
+    {
+      "id": 1,
+      "shape": "polygon",
+      "points_px": [[96, 108], [480, 108], [480, 432], [96, 432]],
+      "points_normalized": [[0.05, 0.1], [0.25, 0.1], [0.25, 0.4], [0.05, 0.4]]
+    }
+  ]
+}

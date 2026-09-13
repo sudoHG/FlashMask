@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="45 68 165 130">
+  <defs>
+    <linearGradient id="plate" x1="73" y1="75" x2="184" y2="191" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFF34A"/><stop offset=".58" stop-color="#FFE500"/><stop offset="1" stop-color="#F5D300"/>
+    </linearGradient>
+    <path id="opening" d="M144 48C148 48 149.5 51 148.5 55L132 117H162C166 117 168 121 166.5 125L116 205C114 209 112.5 212 110 212C106 212 104.5 209 105.5 205L124 138H94.1122A4.5372 4.5372 0 0 1 90.2415 131.0957L138 53C140 50 142 48 144 48Z"/>
+    <mask id="plateCut" maskUnits="userSpaceOnUse" x="0" y="0" width="256" height="256"><rect width="256" height="256" fill="white"/><use href="#opening" fill="black"/></mask>
+  </defs>
+  <rect x="51.5" y="74.3" width="152.3" height="117.6" fill="url(#plate)" mask="url(#plateCut)"/>
+</svg>

@@ -1,0 +1,28 @@
+{
+  "mask_spec_version": "1.0",
+  "instruction": "Each region id must be unique.",
+  "source_image": {
+    "file_name": "street.jpg",
+    "width": 1920,
+    "height": 1080
+  },
+  "coordinate_system": {
+    "origin": "top-left",
+    "x_direction": "right",
+    "y_direction": "down"
+  },
+  "regions": [
+    {
+      "id": 1,
+      "shape": "polygon",
+      "points_px": [[96, 108], [480, 108], [480, 432], [96, 432]],
+      "points_normalized": [[0.05, 0.1], [0.25, 0.1], [0.25, 0.4], [0.05, 0.4]]
+    },
+    {
+      "id": 1,
+      "shape": "polygon",
+      "points_px": [[960, 540], [1440, 540], [1440, 972], [960, 972]],
+      "points_normalized": [[0.5, 0.5], [0.75, 0.5], [0.75, 0.9], [0.5, 0.9]]
+    }
+  ]
+}

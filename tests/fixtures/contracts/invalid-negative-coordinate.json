@@ -1,0 +1,22 @@
+{
+  "mask_spec_version": "1.0",
+  "instruction": "Negative pixel coordinates are invalid.",
+  "source_image": {
+    "file_name": "street.jpg",
+    "width": 1920,
+    "height": 1080
+  },
+  "coordinate_system": {
+    "origin": "top-left",
+    "x_direction": "right",
+    "y_direction": "down"
+  },
+  "regions": [
+    {
+      "id": 1,
+      "shape": "polygon",
+      "points_px": [[-1, 108], [480, 108], [480, 432], [96, 432]],
+      "points_normalized": [[0, 0.1], [0.25, 0.1], [0.25, 0.4], [0.05, 0.4]]
+    }
+  ]
+}

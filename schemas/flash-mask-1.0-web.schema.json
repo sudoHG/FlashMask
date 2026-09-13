@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://flashmask.net/schema/flash-mask-1.0-web.schema.json",
+  "title": "Flash Mask 1.0 web producer profile",
+  "allOf": [
+    { "$ref": "flash-mask-1.0.schema.json" },
+    {
+      "type": "object",
+      "properties": {
+        "source_image": {
+          "allOf": [
+            { "$ref": "flash-mask-1.0.schema.json#/$defs/sourceImage" },
+            { "not": { "type": "object", "required": ["file_path"] } }
+          ]
+        }
+      }
+    }
+  ]
+}

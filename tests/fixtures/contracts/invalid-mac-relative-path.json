@@ -1,0 +1,23 @@
+{
+  "mask_spec_version": "1.0",
+  "instruction": "Mac path must be absolute.",
+  "source_image": {
+    "file_name": "street.jpg",
+    "width": 2,
+    "height": 2,
+    "file_path": "relative/street.jpg"
+  },
+  "coordinate_system": {
+    "origin": "top-left",
+    "x_direction": "right",
+    "y_direction": "down"
+  },
+  "regions": [
+    {
+      "id": 1,
+      "shape": "polygon",
+      "points_px": [[0, 0], [2, 0], [0, 2]],
+      "points_normalized": [[0, 0], [1, 0], [0, 1]]
+    }
+  ]
+}

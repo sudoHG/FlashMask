@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://flashmask.net/schema/flash-mask-1.0.schema.json",
+  "title": "Flash Mask 1.0 shared producer schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["mask_spec_version", "instruction", "source_image", "coordinate_system", "regions"],
+  "properties": {
+    "mask_spec_version": { "const": "1.0" },
+    "instruction": { "type": "string", "minLength": 1, "pattern": "\\S" },
+    "source_image": { "$ref": "#/$defs/sourceImage" },
+    "coordinate_system": { "$ref": "#/$defs/coordinateSystem" },
+    "regions": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/region" } },
+    "prompt": { "type": "string", "minLength": 1, "pattern": "\\S" }
+  },
+  "$defs": {
+    "sourceImage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["file_name", "width", "height"],
+      "properties": {
+        "file_name": { "type": "string", "minLength": 1 },
+        "width": { "type": "integer", "minimum": 1 },
+        "height": { "type": "integer", "minimum": 1 },
+        "file_path": { "type": "string", "minLength": 1, "pattern": "^/" }
+      }
+    },
+    "coordinateSystem": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["origin", "x_direction", "y_direction"],
+      "properties": {
+        "origin": { "const": "top-left" },
+        "x_direction": { "const": "right" },
+        "y_direction": { "const": "down" }
+      }
+    },
+    "pixelPoint": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 2,
+      "prefixItems": [{ "type": "integer", "minimum": 0 }, { "type": "integer", "minimum": 0 }],
+      "items": false
+    },
+    "normalizedPoint": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 2,
+      "prefixItems": [{ "type": "number", "minimum": 0, "maximum": 1 }, { "type": "number", "minimum": 0, "maximum": 1 }],
+      "items": false
+    },
+    "region": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "shape", "points_px", "points_normalized"],
+      "properties": {
+        "id": { "type": "integer", "minimum": 1 },
+        "shape": { "const": "polygon" },
+        "points_px": { "type": "array", "minItems": 3, "items": { "$ref": "#/$defs/pixelPoint" } },
+        "points_normalized": { "type": "array", "minItems": 3, "items": { "$ref": "#/$defs/normalizedPoint" } }
+      }
+    }
+  }
+}
