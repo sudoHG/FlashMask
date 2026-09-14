@@ -6,6 +6,8 @@
 
 **Quick image masks that show AI exactly where to edit.**
 
+<a href="https://apps.apple.com/us/app/flash-mask/id6803817818?mt=12"><img src="https://tools.applemediaservices.com/api/badges/download-on-the-mac-app-store/black/en-us?size=250x83" alt="Download on the Mac App Store" height="54"></a>
+
 > "Not that—the one next to it." How many times have you had to say that to AI?  
 > You want to tweak a single detail, and the model regenerates the entire image. Until now, fixing that meant firing up a heavyweight image editor for tedious selections and exports.  
 > Flash Mask turns that whole process into seconds: drop in an image, outline the area you want changed, and copy structured JSON coordinates straight to your AI or agent so it knows the exact edit location. When you need pixel-level precision, export a 1:1 black-and-white mask with one click.

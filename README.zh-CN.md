@@ -6,6 +6,8 @@
 
 **快速制作图片蒙版，让 AI 看懂你要改的是哪里。**
 
+<a href="https://apps.apple.com/cn/app/flash-mask/id6803817818?mt=12"><img src="https://tools.applemediaservices.com/api/badges/download-on-the-mac-app-store/black/zh-cn?size=250x83" alt="在 Mac App Store 下载" height="54"></a>
+
 > “不是这里，是旁边那个”——这句话你重复过几遍？  
 > 想改一个细节，AI 却把整张图都改了。以前只能去大型图像软件里处理这种繁琐的选区和导出。  
 > 现在 Flash Mask 帮你把这套操作压缩到几秒之内：拖入图片、圈出要改的区域、一键复制结构化 JSON 坐标发给 AI，它就能准确识别修改位置。需要像素级精细处理时，直接导出 1:1 黑白蒙版。
