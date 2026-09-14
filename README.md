@@ -1,6 +1,6 @@
 # Flash Mask
 
-[![Release](https://img.shields.io/github/v/release/sudoHG/FlashMask?style=flat-square&label=release)](https://github.com/sudoHG/FlashMask/releases/latest) [![Stars](https://img.shields.io/github/stars/sudoHG/FlashMask?style=flat-square&label=stars)](https://github.com/sudoHG/FlashMask/stargazers) [![License](https://img.shields.io/badge/license-Apache--2.0-blue?style=flat-square)](LICENSE) [![macOS](https://img.shields.io/badge/macOS-26%2B-black?style=flat-square)](https://apps.apple.com/app/id6803817818) [![Apple Silicon](https://img.shields.io/badge/Apple_Silicon-arm64-black?style=flat-square)](https://apps.apple.com/app/id6803817818) [![README views](https://hits.sh/github.com/sudoHG/FlashMask.svg?style=flat-square&label=README%20views)](https://hits.sh/github.com/sudoHG/FlashMask/)
+[![Release](https://img.shields.io/github/v/release/sudoHG/FlashMask?style=flat-square&label=release)](https://github.com/sudoHG/FlashMask/releases/latest) [![Stars](https://img.shields.io/github/stars/sudoHG/FlashMask?style=flat-square&label=stars)](https://github.com/sudoHG/FlashMask/stargazers) [![License](https://img.shields.io/badge/license-Apache--2.0-blue?style=flat-square)](LICENSE) [![macOS](https://img.shields.io/badge/macOS-26%2B-black?style=flat-square)](https://apps.apple.com/us/app/flash-mask/id6803817818?mt=12) [![Apple Silicon](https://img.shields.io/badge/Apple_Silicon-arm64-black?style=flat-square)](https://apps.apple.com/us/app/flash-mask/id6803817818?mt=12) [![README views](https://hits.sh/github.com/sudoHG/FlashMask.svg?style=flat-square&label=README%20views)](https://hits.sh/github.com/sudoHG/FlashMask/)
 
 [简体中文](README.zh-CN.md) | English
 
@@ -98,7 +98,7 @@ Flash Mask outputs versioned, self-describing JSON with dual coordinate systems�
 
 ## Getting Flash Mask
 
-- **Mac App Store**: Get the official pre-built app on the [Mac App Store](https://apps.apple.com/app/flash-mask/id6803817818?mt=12). A one-time purchase with lifetime access—no subscriptions and no in-app purchases.
+- **Mac App Store**: Get the official pre-built app on the [Mac App Store](https://apps.apple.com/us/app/flash-mask/id6803817818?mt=12). A one-time purchase with lifetime access—no subscriptions and no in-app purchases.
 - **Official Website**: Visit [flashmask.net](https://flashmask.net/) for product updates and details.
 - **Source Releases**: Download source code archives from [GitHub Releases](https://github.com/sudoHG/FlashMask/releases/tag/v1.0.0). *(Note: Official binary builds are distributed exclusively through the Mac App Store; GitHub Releases does not attach pre-built binaries).*
 

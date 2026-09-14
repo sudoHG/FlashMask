@@ -1,6 +1,6 @@
 # Flash Mask
 
-[![Release](https://img.shields.io/github/v/release/sudoHG/FlashMask?style=flat-square&label=release)](https://github.com/sudoHG/FlashMask/releases/latest) [![Stars](https://img.shields.io/github/stars/sudoHG/FlashMask?style=flat-square&label=stars)](https://github.com/sudoHG/FlashMask/stargazers) [![License](https://img.shields.io/badge/license-Apache--2.0-blue?style=flat-square)](LICENSE) [![macOS](https://img.shields.io/badge/macOS-26%2B-black?style=flat-square)](https://apps.apple.com/app/id6803817818) [![Apple Silicon](https://img.shields.io/badge/Apple_Silicon-arm64-black?style=flat-square)](https://apps.apple.com/app/id6803817818) [![README views](https://hits.sh/github.com/sudoHG/FlashMask.svg?style=flat-square&label=README%20views)](https://hits.sh/github.com/sudoHG/FlashMask/)
+[![Release](https://img.shields.io/github/v/release/sudoHG/FlashMask?style=flat-square&label=release)](https://github.com/sudoHG/FlashMask/releases/latest) [![Stars](https://img.shields.io/github/stars/sudoHG/FlashMask?style=flat-square&label=stars)](https://github.com/sudoHG/FlashMask/stargazers) [![License](https://img.shields.io/badge/license-Apache--2.0-blue?style=flat-square)](LICENSE) [![macOS](https://img.shields.io/badge/macOS-26%2B-black?style=flat-square)](https://apps.apple.com/cn/app/flash-mask/id6803817818?mt=12) [![Apple Silicon](https://img.shields.io/badge/Apple_Silicon-arm64-black?style=flat-square)](https://apps.apple.com/cn/app/flash-mask/id6803817818?mt=12) [![README views](https://hits.sh/github.com/sudoHG/FlashMask.svg?style=flat-square&label=README%20views)](https://hits.sh/github.com/sudoHG/FlashMask/)
 
 简体中文 | [English](README.md)
 
@@ -98,7 +98,7 @@ Flash Mask 输出带版本标识、自解释的标准 JSON 数据，内置像素
 
 ## 获取 Flash Mask
 
-- **Mac App Store**：在 [Mac App Store](https://apps.apple.com/app/flash-mask/id6803817818?mt=12) 获取官方预编译版本。一次性买断，终身可用，无任何订阅或应用内购买。
+- **Mac App Store**：在 [Mac App Store](https://apps.apple.com/cn/app/flash-mask/id6803817818?mt=12) 获取官方预编译版本。一次性买断，终身可用，无任何订阅或应用内购买。
 - **官方网站**：访问 [flashmask.net](https://flashmask.net/) 了解产品动态与体验说明。
 - **源码 Release**：在 [GitHub Releases](https://github.com/sudoHG/FlashMask/releases/tag/v1.0.0) 获取源码归档。（注：官方二进制安装包统一通过 Mac App Store 分发，GitHub Releases 不附加预编译安装包）。
 
