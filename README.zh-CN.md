@@ -1,6 +1,6 @@
 # Flash Mask
 
-[![Release](https://img.shields.io/github/v/release/sudoHG/FlashMask?style=flat-square&label=release)](https://github.com/sudoHG/FlashMask/releases/latest) [![Stars](https://img.shields.io/github/stars/sudoHG/FlashMask?style=flat-square&label=stars)](https://github.com/sudoHG/FlashMask/stargazers) [![License](https://img.shields.io/badge/license-Apache--2.0-blue?style=flat-square)](LICENSE) [![macOS](https://img.shields.io/badge/macOS-26%2B-black?style=flat-square)](https://apps.apple.com/app/id6803817818) [![Apple Silicon](https://img.shields.io/badge/Apple_Silicon-arm64-black?style=flat-square)](https://apps.apple.com/app/id6803817818)
+[![Release](https://img.shields.io/github/v/release/sudoHG/FlashMask?style=flat-square&label=release)](https://github.com/sudoHG/FlashMask/releases/latest) [![Stars](https://img.shields.io/github/stars/sudoHG/FlashMask?style=flat-square&label=stars)](https://github.com/sudoHG/FlashMask/stargazers) [![License](https://img.shields.io/badge/license-Apache--2.0-blue?style=flat-square)](LICENSE) [![macOS](https://img.shields.io/badge/macOS-26%2B-black?style=flat-square)](https://apps.apple.com/app/id6803817818) [![Apple Silicon](https://img.shields.io/badge/Apple_Silicon-arm64-black?style=flat-square)](https://apps.apple.com/app/id6803817818) [![README views](https://hits.sh/github.com/sudoHG/FlashMask.svg?style=flat-square&label=README%20views)](https://hits.sh/github.com/sudoHG/FlashMask/)
 
 简体中文 | [English](README.md)
 
