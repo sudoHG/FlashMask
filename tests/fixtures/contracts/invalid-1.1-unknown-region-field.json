@@ -1,0 +1,24 @@
+{
+  "mask_spec_version": "1.1",
+  "instruction": "A valid instruction.",
+  "source_image": {
+    "file_name": "street.jpg",
+    "width": 2,
+    "height": 2,
+    "file_path": "/tmp/flash-mask-contract/street.jpg"
+  },
+  "coordinate_system": {
+    "origin": "top-left",
+    "x_direction": "right",
+    "y_direction": "down"
+  },
+  "regions": [
+    {
+      "id": 1,
+      "shape": "polygon",
+      "points_px": [[0, 0], [2, 0], [0, 2]],
+      "points_normalized": [[0, 0], [1, 0], [0, 1]],
+      "extra": true
+    }
+  ]
+}

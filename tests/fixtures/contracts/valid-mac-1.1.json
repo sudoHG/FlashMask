@@ -1,0 +1,31 @@
+{
+  "mask_spec_version": "1.1",
+  "instruction": "This JSON identifies areas the user selected in the source image. Each polygon marks one selected area; multiple polygons form a combined selection; the first and last points are connected automatically. The top-level `prompt`, if present, applies to the whole image. Each region's `prompt`, if present, applies only to that region. Interpret these texts in the context of the current conversation. The combined geometry marks range only; it does not assign a processing order among regions.",
+  "source_image": {
+    "file_name": "street.jpg",
+    "width": 1920,
+    "height": 1080,
+    "file_path": "/tmp/flash-mask-contract/street.jpg"
+  },
+  "coordinate_system": {
+    "origin": "top-left",
+    "x_direction": "right",
+    "y_direction": "down"
+  },
+  "regions": [
+    {
+      "id": 1,
+      "shape": "polygon",
+      "points_px": [[96, 108], [480, 108], [480, 432], [96, 432]],
+      "points_normalized": [[0.05, 0.1], [0.25, 0.1], [0.25, 0.4], [0.05, 0.4]]
+    },
+    {
+      "id": 3,
+      "shape": "polygon",
+      "points_px": [[600, 108], [900, 108], [900, 432], [600, 432]],
+      "points_normalized": [[0.3125, 0.1], [0.46875, 0.1], [0.46875, 0.4], [0.3125, 0.4]],
+      "prompt": "换浅灰色背景"
+    }
+  ],
+  "prompt": "Keep the building"
+}
