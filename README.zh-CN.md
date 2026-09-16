@@ -20,6 +20,14 @@
 
 Flash Mask 是一款专为 AI 图像编辑与视觉工作流打造的轻量 macOS 原生辅助工具。在与 AI 模型或 Coding Agent 协作修图时，纯文字描述往往难以准确界定修改范围，容易导致整图失真或改错位置。
 
+在 macOS 上，Flash Mask 输出 JSON 1.1：既能写整张图片的说明，也能为各个区域添加可选说明。官网网页版仍输出 JSON 1.0。
+
+### Mac App 本版
+
+- 直接从剪贴板粘贴截图。
+- 为整张图片填写说明，也可以为各个区域添加说明。
+- 在独立设置窗口中切换语言、检查更新，并打开官网、帮助、GitHub 源码或支持页。
+
 Flash Mask 省去了在大型图像软件中繁琐套索、填充和导出图层的步骤，在几秒内将你的圈选转化为 Agent 可直接解析的坐标数据：
 
 - **默认输出结构化 JSON 坐标**：一键生成包含像素坐标、归一化坐标、原图尺寸、本地文件绝对路径以及可选修改意图（Prompt）的标准 JSON 数据，直接粘贴到 AI 对话框或 Agent 工作流中使用。
@@ -36,23 +44,23 @@ Flash Mask 省去了在大型图像软件中繁琐套索、填充和导出图层
 
 ## 快速上手流程
 
-1. **拖入图片**：将 PNG、JPEG/JPG 或 WebP 图片拖入窗口，或点击 **打开图片**。支持平移缩放、**适应窗口** 与 **实际尺寸（1:1）** 视图。
+1. **打开图片**：将 PNG、JPEG/JPG 或 WebP 图片拖入窗口，点击 **打开图片**，或从剪贴板粘贴截图。支持平移缩放、**适应窗口** 与 **实际尺寸（1:1）** 视图。
 2. **圈选与微调区域**：
    - 在图片上按住鼠标圈出不规则区域，松开即可完成添加；支持圈选多个独立区域（自动合并为并集）。
    - 点击已有区域可进行微调：支持整体拖拽移动选区，或自由拖动、新增、删除多边形节点。
-   - 可选：在 **“想让 Agent 做什么？”** 输入框中填写本次修改要求（例如：`"保留山体，去掉天空中的云层。"`）。
+   - 可选：在 **“想让 Agent 做什么？”** 输入框中填写整张图片的修改要求，再选择某个区域添加该区域的说明。
 3. **一键复制 JSON 或导出蒙版**：
    - 点击 **复制 JSON**：将包含图片路径、尺寸、区域多边形坐标及修改要求的结构化数据复制到剪贴板，直接粘贴给 AI / Agent。
-   - 点击 **导出黑白蒙版 PNG**：通过系统保存面板导出与原图等宽等高的黑白 PNG 蒙版文件。
+   - 点击 **导出蒙版 PNG**：通过系统保存面板导出与原图等宽等高的黑白 PNG 蒙版文件。蒙版表示圈选范围，修改说明包含在 JSON 中。
 
 ## JSON 坐标数据格式
 
-Flash Mask 输出带版本标识、自解释的标准 JSON 数据，内置像素坐标与 `[0.0, 1.0]` 归一化坐标双体系（左上角原点，向右为 X、向下为 Y）：
+Flash Mask 输出带版本标识、自解释的标准 JSON 数据，内置像素坐标与 `[0.0, 1.0]` 归一化坐标双体系（左上角原点，向右为 X、向下为 Y）。Mac App 使用 JSON 1.1，官网网页版使用 JSON 1.0：
 
 ```json
 {
-  "mask_spec_version": "1.0",
-  "instruction": "This JSON identifies areas the user selected in the source image. Each polygon marks one selected area; multiple polygons form a combined selection; the first and last points are connected automatically. Interpret the selected areas and any `prompt` in the context of the current conversation. If `prompt` is present, it expresses the user's intent regarding the image.",
+  "mask_spec_version": "1.1",
+  "instruction": "This JSON identifies areas the user selected in the source image. Each polygon marks one selected area; multiple polygons form a combined selection; the first and last points are connected automatically. The top-level `prompt`, if present, applies to the whole image. Each region's `prompt`, if present, applies only to that region. Interpret these texts in the context of the current conversation. The combined geometry marks range only; it does not assign a processing order among regions.",
   "source_image": {
     "file_name": "example.jpg",
     "width": 1920,
@@ -64,13 +72,21 @@ Flash Mask 输出带版本标识、自解释的标准 JSON 数据，内置像素
     "x_direction": "right",
     "y_direction": "down"
   },
-  "prompt": "保留山体，去掉天空中的云层。",
+  "prompt": "保留建筑",
   "regions": [
     {
       "id": 1,
       "shape": "polygon",
       "points_px": [[96, 108], [480, 108], [480, 432], [96, 432]],
-      "points_normalized": [[0.05, 0.1], [0.25, 0.1], [0.25, 0.4], [0.05, 0.4]]
+      "points_normalized": [[0.05, 0.1], [0.25, 0.1], [0.25, 0.4], [0.05, 0.4]],
+      "prompt": "去掉杂线"
+    },
+    {
+      "id": 3,
+      "shape": "polygon",
+      "points_px": [[600, 108], [900, 108], [900, 432], [600, 432]],
+      "points_normalized": [[0.3125, 0.1], [0.46875, 0.1], [0.46875, 0.4], [0.3125, 0.4]],
+      "prompt": "换浅灰色背景"
     }
   ]
 }
@@ -78,12 +94,14 @@ Flash Mask 输出带版本标识、自解释的标准 JSON 数据，内置像素
 
 ### 字段说明
 
-- `mask_spec_version`：协议版本号（当前为 `"1.0"`）。
+- `mask_spec_version`：协议版本号。Mac App 当前输出 `"1.1"`，官网网页版仍输出 `"1.0"`。
 - `instruction`：内置自解释说明，引导下游 AI 模型或 Agent 理解圈选多边形与修改意图。
 - `source_image`：原图文件名、像素宽高以及 Mac 本地完整绝对路径（`file_path` 为 Mac 端专属，方便本地 Agent 直接读取原图）。
 - `coordinate_system`：坐标系规范（固定为左上角原点，向右为 X、向下为 Y）。
-- `prompt`：可选。用户填写的任务级修改说明。
-- `regions`：圈选区域列表。每个区域包含整数像素坐标 `points_px`（`[x, y]`）与无量纲归一化坐标 `points_normalized`（`[x/width, y/height]`）。首尾节点自动闭合，多区域共同构成并集。
+- `prompt`：可选。Mac JSON 1.1 中表示整张图片的修改说明。
+- `regions`：圈选区域列表。每个区域包含整数像素坐标 `points_px`（`[x, y]`）与无量纲归一化坐标 `points_normalized`（`[x/width, y/height]`）。Mac JSON 1.1 可为单个区域附加可选 `prompt`；删除其他区域后，区域 ID 仍保持稳定。首尾节点自动闭合，多区域共同构成并集。
+
+严格使用 JSON 1.0 的消费者需要先升级校验器，再接受 JSON 1.1。Flash Mask 不会静默丢弃区域说明。
 
 ## 核心功能特性
 
@@ -91,7 +109,7 @@ Flash Mask 输出带版本标识、自解释的标准 JSON 数据，内置像素
 - **多区域圈选**：支持在单张图片上圈选多个不规则区域，导出时自动计算并集合并。
 - **交互式节点编辑**：选区支持整体拖拽平移，可精准新增、拖动或删除多边形顶点。
 - **画布自由导航**：平滑缩放与拖拽平移，提供 **适应窗口** 与 **实际尺寸（1:1 像素）** 快捷视图。
-- **任务级修改说明**：支持为当前图片标注附加 Prompt 意图说明。
+- **图片与区域说明**：支持为整张图片添加修改说明，也可以在 Mac App 中为单个区域添加说明。
 - **双坐标系输出**：兼具绝对像素坐标与分辨率无关的归一化坐标，适配不同 Agent 与模型接口。
 - **原图尺寸保真**：导出的黑白 PNG 蒙版严格与原图宽高 1:1 对应，选区纯白、背景纯黑、无羽化。
 - **本地路径直达**：Mac 端复制的 JSON 包含验证后的本地文件绝对路径，方便本地自动化脚本与 Agent 直接定位文件。
@@ -110,7 +128,7 @@ Flash Mask 输出带版本标识、自解释的标准 JSON 数据，内置像素
 - macOS AppKit / WKWebView 原生宿主外壳与 Xcode 工程（`macos/`）
 - 内嵌的 HTML / JavaScript 编辑器核心（`index.html`）
 - 坐标合同协议、套索选区清洗与蒙版生成逻辑（`src/`）
-- Flash Mask 1.0 JSON 坐标数据校验规范（`schemas/`）
+- Flash Mask 1.0 与 1.1 JSON 坐标数据校验规范（`schemas/`）
 - 核心自动化契约与单元测试套件（`tests/`）
 
 *注：本仓库包含独立的 Mac 应用及编辑核心，不包含独立网页版部署脚本或运营后端服务（如营销展示页、额度与广告服务、数据统计及运营设施）。根据 Apache-2.0 许可证，核心编辑模块与共享数据契约可自由移植和改造。*
@@ -165,7 +183,7 @@ npm test
 |---|---|
 | `index.html` | Mac App 内嵌编辑界面、画布交互控制与 UI 状态机 |
 | `src/` | 坐标合同协议解析、蒙版栅格化与套索选区清洗算法 |
-| `schemas/` | Flash Mask 1.0 坐标数据合同的官方 JSON Schema 定义 |
+| `schemas/` | Flash Mask 1.0 与 1.1 坐标数据合同的官方 JSON Schema 定义 |
 | `macos/` | AppKit / WKWebView 原生宿主包装、安全作用域文件访问与 Xcode 工程 |
 | `tests/` | 核心单元测试、契约测试与验证用例 |
 

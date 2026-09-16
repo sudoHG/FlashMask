@@ -44,6 +44,10 @@
   .language-toggle { min-width: 86px; min-height: 34px; border: 1px solid var(--line); border-radius: 9px; background: var(--panel); color: var(--text); padding: 6px 10px; display: inline-flex; align-items: center; justify-content: center; gap: 7px; cursor: pointer; font-size: 13px; }
   .language-toggle:hover { border-color: rgba(255,255,255,.22); background: var(--panel-2); }
   .language-toggle .icon { width: 17px; height: 17px; }
+  .top-right { display: flex; align-items: center; gap: 16px; }
+  .quiet-link { color: var(--muted); font-size: 12px; text-decoration: none; display: inline-flex; align-items: center; gap: 5px; min-height: 30px; border: 0; background: transparent; padding: 0; cursor: pointer; white-space: nowrap; }
+  .quiet-link:hover { color: var(--text); }
+  .quiet-link .icon { width: 14px; height: 14px; }
 
   .layout { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(520px, 1fr) clamp(320px, 23.5vw, 350px); gap: 12px; }
   .layout.ready { grid-template-columns: minmax(520px, 1fr) clamp(310px, 23vw, 348px); }
@@ -151,6 +155,7 @@
     .layout { grid-template-columns: minmax(420px,1fr) 286px; gap: 8px; }
     .layout.ready { grid-template-columns: minmax(420px,1fr) 286px; }
     .brand-row { gap: 8px; }
+    .top-right { gap: 12px; }
     .side-panel { padding: 14px; }
     .empty-guide { padding: 54px 10px 16px; }
     .empty-guide h2 { font-size: 28px; }
@@ -170,80 +175,38 @@
     #prompt-input { height: 58px; }
     .result-button { min-height: 38px; margin-top: 7px; }
   }
+
+  html.mac-notes .result-panel { gap: 0; }
+  html.mac-notes .json-shell { flex: 0 0 160px; min-height: 0; }
+  html.mac-notes .task-actions { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+  html.mac-notes .prompt-title, html.mac-notes .result-button, html.mac-notes .panel-heading { flex: none; }
+  html.mac-notes .note-navigation { height: 30px; flex: none; display: flex; align-items: center; gap: 6px; padding: 3px 7px 0; border: 1px solid var(--line); border-bottom: 0; border-radius: var(--control-radius) var(--control-radius) 0 0; background: #11161a; }
+  html.mac-notes .prompt-wrap { flex: 1; min-height: 0; display: flex; flex-direction: column; border: 1px solid var(--line); border-radius: 0 0 var(--control-radius) var(--control-radius); background: #11161a; }
+  html.mac-notes .prompt-wrap:focus-within { border-color: #9d9561; }
+  html.mac-notes #prompt-input { flex: 1; min-height: 0; height: auto; border: 0; border-radius: 0; background: transparent; padding: 5px 11px 24px; }
+  html.mac-notes #prompt-input:focus { border-color: transparent; }
+  html.mac-notes #prompt-input:disabled { color: var(--muted); }
+  html.mac-notes .areas { display: flex; gap: 4px; overflow-x: auto; scrollbar-width: thin; min-width: 0; flex: 1; }
+  html.mac-notes .area-tab { flex: none; height: 24px; min-width: 26px; border: 1px solid transparent; border-radius: 5px; background: transparent; color: var(--muted); font-size: 11px; cursor: pointer; position: relative; padding: 0 5px; }
+  html.mac-notes .area-tab[aria-pressed="true"] { color: var(--flash); border-color: #67612d; background: #24251b; }
+  html.mac-notes .area-tab.has-note::after { content: ""; position: absolute; right: 2px; top: 2px; width: 3px; height: 3px; border-radius: 50%; background: currentColor; }
+  html.mac-notes #overall-tab { min-width: 60px; }
+  html.mac-notes #delete-note-region { flex: none; border: 0; background: none; color: var(--muted); font-size: 11px; cursor: pointer; padding: 2px; }
+  html.mac-notes #delete-note-region:disabled { opacity: .3; cursor: default; }
+  .note-navigation[hidden] { display: none !important; }
+  @media (max-height: 720px) {
+    html.mac-notes .json-shell { flex-basis: 112px; }
+  }
+  @media (max-height: 660px) {
+    html.mac-notes .note-navigation { height: 24px; }
+    html.mac-notes .area-tab { height: 21px; }
+  }
 </style>
 </head>
 <body>
 <svg hidden aria-hidden="true">
-<!-- Lucide / Feather icons: https://github.com/lucide-icons/lucide
-ISC License
-
-Copyright (c) 2026 Lucide Icons and Contributors
-
-Permission to use, copy, modify, and/or distribute this software for any
-purpose with or without fee is hereby granted, provided that the above
-copyright notice and this permission notice appear in all copies.
-
-THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
-MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
-ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-
-
-The following Lucide icons are derived from the Feather project:
-
-airplay, alert-circle, alert-octagon, alert-triangle, aperture, arrow-down-circle, arrow-down-left, arrow-down-right, arrow-down, arrow-left-circle, arrow-left, arrow-right-circle, arrow-right, arrow-up-circle, arrow-up-left, arrow-up-right, arrow-up, at-sign, calendar, cast, check, chevron-down, chevron-left, chevron-right, chevron-up, chevrons-down, chevrons-left, chevrons-right, chevrons-up, circle, clipboard, clock, code, columns, command, compass, corner-down-left, corner-down-right, corner-left-down, corner-left-up, corner-right-down, corner-right-up, corner-up-left, corner-up-right, crosshair, database, divide-circle, divide-square, dollar-sign, download, external-link, feather, frown, hash, headphones, help-circle, info, italic, key, layout, life-buoy, link-2, link, loader, lock, log-in, log-out, maximize, meh, minimize, minimize-2, minus-circle, minus-square, minus, monitor, moon, more-horizontal, more-vertical, move, music, navigation-2, navigation, octagon, pause-circle, percent, plus-circle, plus-square, plus, power, radio, rss, search, server, share, shopping-bag, sidebar, smartphone, smile, square, table-2, tablet, target, terminal, trash-2, trash, triangle, tv, type, upload, x-circle, x-octagon, x-square, x, zoom-in, zoom-out
-
-The MIT License (MIT) (for the icons listed above)
-
-Copyright (c) 2013-present Cole Bemis
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-
--->
   <symbol id="i-image-up" viewBox="0 0 24 24"><path d="M10.3 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v10l-3.1-3.1a2 2 0 0 0-2.814.014L6 21"/><path d="m14 19.5 3-3 3 3M17 22v-5.5"/><circle cx="9" cy="9" r="2"/></symbol>
-  <!-- Microsoft Fluent UI System Icons: https://github.com/microsoft/fluentui-system-icons
-MIT License
-
-Copyright (c) 2020 Microsoft Corporation
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-
-  -->
+  <!-- Microsoft Fluent UI System Icons, MIT: https://github.com/microsoft/fluentui-system-icons -->
   <symbol id="i-zoom-one" viewBox="0 0 20 20"><path fill="currentColor" stroke="none" d="M6.763 7.075A.5.5 0 0 1 7 7.5v5a.5.5 0 0 1-1 0V8.309l-.276.138a.5.5 0 1 1-.448-.894l1-.5a.5.5 0 0 1 .487.022M14 7.5a.5.5 0 0 0-.724-.447l-1 .5a.5.5 0 1 0 .448.894L13 8.31v4.19a.5.5 0 0 0 1 0zm-4 1a.5.5 0 1 1-1 0a.5.5 0 0 1 1 0M9.5 12a.5.5 0 1 0 0-1a.5.5 0 0 0 0 1M2 6.75A2.75 2.75 0 0 1 4.75 4h10.5A2.75 2.75 0 0 1 18 6.75v6.5A2.75 2.75 0 0 1 15.25 16H4.75A2.75 2.75 0 0 1 2 13.25zM4.75 5A1.75 1.75 0 0 0 3 6.75v6.5c0 .966.784 1.75 1.75 1.75h10.5A1.75 1.75 0 0 0 17 13.25v-6.5A1.75 1.75 0 0 0 15.25 5z"/></symbol>
   <symbol id="i-file-image" viewBox="0 0 24 24"><path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2zM14 2v5a1 1 0 0 0 1 1h5"/><circle cx="10" cy="12" r="2"/><path d="m20 17-1.296-1.296a2.41 2.41 0 0 0-3.408 0L9 22"/></symbol>
   <symbol id="i-folder" viewBox="0 0 24 24"><path d="m6 14 1.5-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.54 6a2 2 0 0 1-1.95 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H18a2 2 0 0 1 2 2v2"/></symbol>
@@ -266,7 +229,11 @@ SOFTWARE.
       <label class="file-label" for="source-file" role="button" tabindex="0"><svg class="icon"><use href="#i-image-up"/></svg><span data-i18n="changeImage">打开图片</span></label>
       <input id="source-file" type="file" accept="image/png,image/jpeg,image/webp">
     </div>
-    <button id="language-toggle" class="language-toggle" type="button" hidden><svg class="icon"><use href="#i-globe"/></svg><span>English</span></button>
+    <div class="top-right" id="mac-top-chrome" hidden>
+      <button id="website-link" class="quiet-link" type="button" hidden><svg class="icon"><use href="#i-globe"/></svg><span data-i18n="website">官网</span></button>
+      <button id="github-link" class="quiet-link" type="button" hidden>GitHub ↗</button>
+      <button id="language-toggle" class="language-toggle" type="button" hidden><svg class="icon"><use href="#i-globe"/></svg><span>English</span></button>
+    </div>
   </header>
 
   <div class="layout">
@@ -307,7 +274,7 @@ SOFTWARE.
     <aside class="side-panel">
       <section id="empty-guide" class="empty-guide">
         <h2 data-i18n="guideTitle">你圈一下，<br>剩下交给Agent</h2>
-        <p data-i18n="guideSubtitle">告别Photoshop，<br>把图片修改和蒙版处理交给AI</p>
+        <p data-i18n="guideSubtitle">告别大型图像处理软件，<br>把图片修改和蒙版处理交给 AI</p>
         <div class="guide-rule"></div>
         <div class="guide-steps">
           <div class="guide-step"><span class="guide-icon"><svg class="icon"><use href="#i-image-up"/></svg></span><span data-i18n="stepImport">拖入图片</span></div>
@@ -327,9 +294,14 @@ SOFTWARE.
         <textarea id="json-output" readonly tabindex="-1" aria-label="Flash Mask JSON"></textarea>
         <div class="task-actions">
           <div class="prompt-title"><span data-i18n="promptTitle">想让 Agent 做什么？</span><span class="prompt-optional" data-i18n="promptOptional">可选</span></div>
+          <div class="note-navigation" id="note-navigation" hidden>
+            <button id="overall-tab" class="area-tab" type="button" aria-pressed="true" data-i18n="overallNote">整体说明</button>
+            <div class="areas" id="area-tabs" aria-label="区域编号"></div>
+            <button id="delete-note-region" type="button" disabled data-i18n="deleteNoteRegion">删除</button>
+          </div>
           <div class="prompt-wrap"><textarea id="prompt-input" placeholder="例如：&#10;保留山体，去掉天空中的云。"></textarea><span id="prompt-count" class="prompt-count">0</span></div>
           <button id="copy-json" class="result-button" type="button" disabled><svg class="icon"><use href="#i-copy"/></svg> <span data-i18n="copyJson">复制 JSON</span></button>
-          <a id="download-mask" class="result-button disabled" hidden><svg class="icon"><use href="#i-download"/></svg> <span data-i18n="exportMask">导出黑白蒙版 PNG</span></a>
+          <a id="download-mask" class="result-button disabled" hidden><svg class="icon"><use href="#i-download"/></svg> <span data-i18n="exportMask">导出蒙版 PNG</span></a>
         </div>
       </section>
     </aside>
@@ -361,8 +333,15 @@ SOFTWARE.
     const jsonPreview = document.querySelector('#json-preview');
     const promptInput = document.querySelector('#prompt-input');
     const promptCount = document.querySelector('#prompt-count');
+    const noteNavigation = document.querySelector('#note-navigation');
+    const overallTab = document.querySelector('#overall-tab');
+    const areaTabs = document.querySelector('#area-tabs');
+    const deleteNoteRegionButton = document.querySelector('#delete-note-region');
     const regionCount = document.querySelector('#region-count');
     const languageToggle = document.querySelector('#language-toggle');
+    const websiteLink = document.querySelector('#website-link');
+    const githubLink = document.querySelector('#github-link');
+    const macTopChrome = document.querySelector('#mac-top-chrome');
     const focusButton = document.querySelector('#editor-focus');
     const dropTitle = emptyCanvas.querySelector('[data-i18n="dropTitle"]');
     const webShell = window.__flashMaskRequireWebAdapter === true;
@@ -396,6 +375,10 @@ SOFTWARE.
       regions: [],
       selectedRegion: -1,
       selectedNode: -1,
+      nextRegionId: 1,
+      overallPrompt: '',
+      noteScope: 'overall',
+      noteRegionId: null,
       interaction: null,
       history: [],
       viewport: { zoom: 1, x: 0, y: 0 },
@@ -458,14 +441,16 @@ SOFTWARE.
         importPreserved: '无法打开这张图片，已保留当前任务。', pathFailed: '无法取得真实路径，请重新导入。', pathPending: '正在取得真实本地路径。',
         outputReady: 'JSON 和黑白蒙版已就绪。', drawing: '正在圈选区域。', tooLong: '圈选轨迹过长，请重新圈选。', invalid: '圈选无效，请重新圈选。',
         continue: '继续圈选可增加区域；点击已有区域可调整。', draw: '按住鼠标圈选，松开即添加区域。', importing: '正在导入图片。', tooSmall: '圈选范围太小，请重新圈选。', outside: '圈选不能超出图片，请重新圈选。',
-        overlap: '区域不能重叠，请重新圈选。', unavailable: '结果尚未就绪，不能复制。', copied: 'JSON 已复制。', copyChanged: '内容已变化，请再次复制。', copyFailed: '复制失败，请手动复制 JSON。', exportFailed: '蒙版生成失败，请重试。'
+        overlap: '区域不能重叠，请重新圈选。', unavailable: '结果尚未就绪，不能复制。', copied: 'JSON 已复制。', copyChanged: '内容已变化，请再次复制。', copyFailed: '复制失败，请手动复制 JSON。', exportFailed: '蒙版生成失败，请重试。',
+        selectAreaNote: '选择一个区域填写说明', areaPlaceholder: '只说明这个区域要怎样修改，可留空', overallPlaceholder: '对整张图片的要求，可留空'
       },
       en: {
         emptyJson: 'Outline an area to generate JSON for your AI agent.', chooseToGenerate: 'Choose an image to generate JSON and a black-and-white mask.', decodeFailed: 'We couldn’t open this image.',
         importPreserved: 'We couldn’t open this image. Your current work is unchanged.', pathFailed: 'We couldn’t access this file. Import it again.', pathPending: 'Finishing import…',
         outputReady: 'Your JSON and mask are ready.', drawing: 'Outlining an area…', tooLong: 'That outline is too complex. Try again with a shorter stroke.', invalid: 'That outline didn’t form a valid area. Try again.',
         continue: 'Outline another area, or click an existing one to adjust it.', draw: 'Click and drag to outline an area, then release.', importing: 'Importing image…', tooSmall: 'That selection is too small. Try again.', outside: 'Keep the selection inside the image and try again.',
-        overlap: 'Selected areas can’t overlap. Try again.', unavailable: 'JSON isn’t ready to copy yet.', copied: 'JSON copied.', copyChanged: 'The JSON changed while it was being copied. Copy it again.', copyFailed: 'Couldn’t copy the JSON. Copy it from the preview instead.', exportFailed: 'Couldn’t generate the mask. Try again.'
+        overlap: 'Selected areas can’t overlap. Try again.', unavailable: 'JSON isn’t ready to copy yet.', copied: 'JSON copied.', copyChanged: 'The JSON changed while it was being copied. Copy it again.', copyFailed: 'Couldn’t copy the JSON. Copy it from the preview instead.', exportFailed: 'Couldn’t generate the mask. Try again.',
+        selectAreaNote: 'Select an area to add a note', areaPlaceholder: 'Describe this area’s edit, or leave blank', overallPlaceholder: 'Instructions for the whole image, or leave blank'
       }
     };
     const t = (key) => messages[state.language]?.[key] ?? messages.zh[key] ?? key;
@@ -510,8 +495,75 @@ SOFTWARE.
       };
     };
 
-    const copyPoints = (points) => points.map((point) => [...point]);
+    const isMacNotes = () => state.task?.platform === 'mac';
+    const geometryPoints = (region) => region.map((point) => [...point]);
+    function copyPoints(points) {
+      const copy = geometryPoints(points);
+      if (Number.isInteger(points.id) && points.id > 0) copy.id = points.id;
+      copy.prompt = typeof points.prompt === 'string' ? points.prompt : '';
+      return copy;
+    }
     const copyRegions = (regions = state.regions) => regions.map(copyPoints);
+    function snapshotRegions(regions = state.regions) {
+      return regions.map(geometryPoints);
+    }
+    function bumpNextRegionId() {
+      const maxId = state.regions.reduce((max, region) => Math.max(max, Number.isInteger(region.id) ? region.id : 0), 0);
+      state.nextRegionId = Math.max(state.nextRegionId, maxId + 1);
+    }
+    function createRegion(points, prompt = '') {
+      const region = geometryPoints(points);
+      region.id = state.nextRegionId++;
+      region.prompt = prompt;
+      return region;
+    }
+    function withGeometry(source, points) {
+      const next = points.map((point) => [...point]);
+      if (Number.isInteger(source.id) && source.id > 0) next.id = source.id;
+      next.prompt = typeof source.prompt === 'string' ? source.prompt : '';
+      return next;
+    }
+    function noteRegion() {
+      if (!isMacNotes() || state.noteScope !== 'area' || !Number.isInteger(state.noteRegionId)) return null;
+      return state.regions.find((region) => region.id === state.noteRegionId) ?? null;
+    }
+    function setOverallNotes() {
+      state.noteScope = 'overall';
+      state.noteRegionId = null;
+    }
+    function setAreaNotes(region) {
+      state.noteScope = 'area';
+      state.noteRegionId = region.id;
+    }
+    function visiblePromptValue() {
+      const region = noteRegion();
+      if (region) return region.prompt ?? '';
+      return state.overallPrompt;
+    }
+    function commitPromptInput() {
+      const region = noteRegion();
+      if (region) {
+        region.prompt = promptInput.value;
+        return;
+      }
+      if (isMacNotes() && state.noteScope === 'area') return;
+      state.overallPrompt = promptInput.value;
+    }
+    function syncPromptInput() {
+      const mac = isMacNotes();
+      const macArea = mac && state.noteScope === 'area';
+      const region = noteRegion();
+      const hasArea = Boolean(macArea && region);
+      promptInput.disabled = macArea && !hasArea;
+      if (document.activeElement !== promptInput) promptInput.value = visiblePromptValue();
+      if (!mac) {
+        promptInput.placeholder = state.language === 'en' ? 'Example:\nKeep the mountain and remove the clouds.' : '例如：\n保留山体，去掉天空中的云。';
+        return;
+      }
+      if (macArea && !hasArea) promptInput.placeholder = t('selectAreaNote');
+      else if (macArea) promptInput.placeholder = t('areaPlaceholder');
+      else promptInput.placeholder = t('overallPlaceholder');
+    }
 
     function syntaxJson(json) {
       const escaped = json.replace(/[&<>]/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[character]);
@@ -526,6 +578,43 @@ SOFTWARE.
       jsonPreview.innerHTML = json ? syntaxJson(json) : `<span class="empty-json">${t('emptyJson')}</span>`;
       jsonPreview.parentElement.scrollTop = scrollTop;
       renderedJson = renderKey;
+    }
+
+    function renderNoteTabs() {
+      const mac = isMacNotes();
+      document.documentElement.classList.toggle('mac-notes', mac);
+      noteNavigation.hidden = !mac;
+      const focusedId = document.activeElement?.dataset?.area;
+      overallTab.setAttribute('aria-pressed', String(state.noteScope === 'overall'));
+      overallTab.classList.toggle('has-note', Boolean(state.overallPrompt.trim()));
+      const noted = noteRegion();
+      deleteNoteRegionButton.disabled = !(mac && noted);
+      areaTabs.replaceChildren();
+      if (mac) {
+        for (const region of state.regions) {
+          const button = document.createElement('button');
+          button.type = 'button';
+          button.className = 'area-tab';
+          if (typeof region.prompt === 'string' && region.prompt.trim()) button.classList.add('has-note');
+          button.textContent = String(region.id);
+          button.dataset.area = String(region.id);
+          button.setAttribute('aria-pressed', String(state.noteScope === 'area' && region.id === state.noteRegionId));
+          button.setAttribute('aria-label', state.language === 'en' ? `Area ${region.id}` : `区域 ${region.id}`);
+          button.addEventListener('click', () => {
+            commitPromptInput();
+            state.selectedRegion = state.regions.indexOf(region);
+            state.selectedNode = -1;
+            setAreaNotes(region);
+            promptInput.value = region.prompt ?? '';
+            refreshPromptOnly();
+            redrawSelection();
+            render();
+          });
+          areaTabs.append(button);
+        }
+        if (focusedId) areaTabs.querySelector(`[data-area="${focusedId}"]`)?.focus();
+      }
+      syncPromptInput();
     }
 
     function render() {
@@ -562,6 +651,7 @@ SOFTWARE.
       clearButton.disabled = state.regions.length === 0 || Boolean(state.interaction);
       zoomLabel.textContent = `${Math.round(state.viewport.zoom * 100)}%`;
       regionCount.textContent = state.language === 'zh' ? `${state.regions.length} 个区域` : `${state.regions.length} area${state.regions.length === 1 ? '' : 's'}`;
+      renderNoteTabs();
       promptCount.textContent = String(promptInput.value.length);
       promptCount.hidden = promptInput.value.length === 0;
       updateCanvasScrollbars();
@@ -651,17 +741,34 @@ SOFTWARE.
       context.fillStyle = selected ? 'rgba(255,229,0,.17)' : 'rgba(8,13,18,.16)';
       if (points.length >= 3) context.fill();
       context.stroke();
-      if (!selected) return;
-      const radius = 3.45 / state.viewport.zoom;
-      points.forEach((point, index) => {
+      if (selected) {
+        const radius = 3.45 / state.viewport.zoom;
+        points.forEach((point, index) => {
+          context.beginPath();
+          context.lineWidth = 1.5 / state.viewport.zoom;
+          context.strokeStyle = '#20272c';
+          context.fillStyle = index === state.selectedNode ? '#fff' : '#ffe500';
+          context.arc(point[0], point[1], index === state.selectedNode ? radius * 1.45 : radius, 0, Math.PI * 2);
+          context.fill();
+          context.stroke();
+        });
+      }
+      if (isMacNotes() && Number.isInteger(points.id)) {
+        const zoom = state.viewport.zoom;
+        const [x, y] = points[0];
         context.beginPath();
-        context.lineWidth = 1.5 / state.viewport.zoom;
-        context.strokeStyle = '#20272c';
-        context.fillStyle = index === state.selectedNode ? '#fff' : '#ffe500';
-        context.arc(point[0], point[1], index === state.selectedNode ? radius * 1.45 : radius, 0, Math.PI * 2);
+        context.fillStyle = selected ? '#ffe500' : '#171d22';
+        context.arc(x, y, 10 / zoom, 0, Math.PI * 2);
         context.fill();
+        context.strokeStyle = '#d8cc55';
+        context.lineWidth = 1 / zoom;
         context.stroke();
-      });
+        context.fillStyle = selected ? '#101418' : '#f5efb9';
+        context.font = `600 ${11 / zoom}px -apple-system, sans-serif`;
+        context.textAlign = 'center';
+        context.textBaseline = 'middle';
+        context.fillText(String(points.id), x, y);
+      }
     }
 
     function redrawSelection() {
@@ -700,6 +807,8 @@ SOFTWARE.
       state.regions = [];
       state.selectedRegion = -1;
       state.selectedNode = -1;
+      state.nextRegionId = 1;
+      setOverallNotes();
       state.interaction = null;
       state.history = [];
       redrawSelection();
@@ -1175,7 +1284,7 @@ SOFTWARE.
       const clampedDx = Math.max(-Math.min(...xs), Math.min(task.width - Math.max(...xs), dx));
       const clampedDy = Math.max(-Math.min(...ys), Math.min(task.height - Math.max(...ys), dy));
       if (!clampedDx && !clampedDy) return current;
-      const translate = (moveX, moveY) => current.map(([x, y]) => [x + moveX, y + moveY]);
+      const translate = (moveX, moveY) => withGeometry(current, current.map(([x, y]) => [x + moveX, y + moveY]));
       const otherBounds = state.regions.flatMap((region, index) => index === regionIndex ? [] : [{ region, bounds: regionBounds(region) }]);
       if (!otherBounds.length) return translate(clampedDx, clampedDy);
       const currentBounds = regionBounds(current);
@@ -1203,6 +1312,7 @@ SOFTWARE.
       if (event.button !== 0 || event.ctrlKey) return;
       const selected = selectionPoint(event);
       if (!selected) return;
+      commitPromptInput();
       const point = selected.image;
       const selectedBefore = { region: state.selectedRegion, node: state.selectedNode };
       state.notice = null;
@@ -1358,7 +1468,7 @@ SOFTWARE.
     function createPayloadForRegions(task, regions, platform = task.platform) {
       const sourceImage = { file_name: task.fileName, width: task.width, height: task.height };
       if (platform === 'mac') sourceImage.file_path = task.filePath;
-      return contract.createPayload({ platform, sourceImage, regions, prompt: promptInput.value });
+      return contract.createPayload({ platform, sourceImage, regions, prompt: state.overallPrompt });
     }
 
     function isRecoverableLassoFailure(error) {
@@ -1500,9 +1610,14 @@ SOFTWARE.
           return false;
         }
         saveHistory();
-        state.regions.push(copyPoints(finalPoints));
+        state.regions.push(createRegion(finalPoints));
         state.selectedRegion = state.regions.length - 1;
         state.selectedNode = -1;
+        if (isMacNotes()) {
+          setOverallNotes();
+          promptInput.disabled = false;
+          if (document.activeElement !== promptInput) promptInput.value = state.overallPrompt;
+        }
         state.selection = null;
         state.notice = null;
       }
@@ -1545,6 +1660,7 @@ SOFTWARE.
         state.pendingImport = null;
         resetSelection();
         state.notice = null;
+        state.overallPrompt = '';
         promptInput.value = '';
         state.pathRequestNonce = platform === 'mac' ? import_nonce : null;
         state.acceptedPathResponseNonce = null;
@@ -1836,11 +1952,20 @@ SOFTWARE.
       if (state.interaction) return;
       const previous = state.history.pop();
       if (!previous) return;
-      state.regions = previous;
-      state.selectedRegion = Math.min(state.selectedRegion, state.regions.length - 1);
+      commitPromptInput();
+      const currentPrompts = new Map(state.regions.filter((region) => Number.isInteger(region.id)).map((region) => [region.id, region.prompt ?? '']));
+      state.regions = previous.map((region) => {
+        const restored = copyPoints(region);
+        if (currentPrompts.has(restored.id)) restored.prompt = currentPrompts.get(restored.id);
+        return restored;
+      });
+      bumpNextRegionId();
+      if (state.selectedRegion >= state.regions.length) state.selectedRegion = state.regions.length - 1;
+      if (state.noteScope === 'area' && !noteRegion()) setOverallNotes();
       state.selectedNode = -1;
       state.selection = null;
       state.notice = null;
+      if (document.activeElement !== promptInput) promptInput.value = visiblePromptValue();
       refreshOutput();
       redrawSelection();
       render();
@@ -1848,12 +1973,15 @@ SOFTWARE.
 
     function clearRegions() {
       if (state.interaction || !state.regions.length) return;
+      commitPromptInput();
       saveHistory();
       state.regions = [];
       state.selectedRegion = -1;
       state.selectedNode = -1;
+      setOverallNotes();
       state.selection = null;
       state.notice = null;
+      if (document.activeElement !== promptInput) promptInput.value = visiblePromptValue();
       clearOutput();
       redrawSelection();
       render();
@@ -1861,11 +1989,15 @@ SOFTWARE.
 
     function deleteSelectedRegion() {
       if (state.interaction || state.selectedRegion < 0) return;
+      commitPromptInput();
       saveHistory();
+      const deletedId = state.regions[state.selectedRegion].id;
       state.regions.splice(state.selectedRegion, 1);
       state.selectedRegion = -1;
       state.selectedNode = -1;
+      if (state.noteRegionId === deletedId) setOverallNotes();
       regionMenu.hidden = true;
+      if (document.activeElement !== promptInput) promptInput.value = visiblePromptValue();
       refreshOutput();
       redrawSelection();
       render();
@@ -2017,10 +2149,15 @@ SOFTWARE.
       const values = {
         dropTitle: english ? 'Drop an image here, or open one' : '拖入图片，或打开图片', fileFormats: english ? 'PNG, JPG/JPEG, WebP' : 'PNG、JPG、JPEG、WebP', chooseImage: english ? 'Open Image' : '打开图片',
         undo: english ? 'Undo' : '撤销', clear: english ? 'Clear All' : '清空', fit: english ? 'Fit' : '适应', actualSize: english ? 'Actual Size' : '原尺寸', deleteRegion: english ? 'Delete Area' : '删除区域',
-        guideTitle: english ? 'Outline it.<br> Your agent takes over.' : '你圈一下，<br>剩下交给Agent', guideSubtitle: english ? 'Skip Photoshop.<br> AI handles edits and masks.' : '告别Photoshop，<br>把图片修改和蒙版处理交给AI',
+        guideTitle: english ? 'Outline it.<br> Your agent takes over.' : '你圈一下，<br>剩下交给Agent', guideSubtitle: english ? 'Skip the heavyweight image editors.<br> AI handles edits and masks.' : '告别大型图像处理软件，<br>把图片修改和蒙版处理交给 AI',
         stepImport: english ? 'Drop an image' : '拖入图片', stepCircle: english ? 'Outline the area to change' : '圈出要改的地方', stepSend: english ? 'Copy JSON for your AI agent' : '复制数据发给Agent',
         guideUse: english ? 'Good for:' : '适合：', guideCaseReplace: english ? 'Replacing parts of an image' : '替换局部', guideCaseDetail: english ? 'Editing details' : '修改细节', guideCaseRemove: english ? 'Removing unwanted areas' : '消除区域',
-        jsonPreview: english ? 'JSON preview' : 'JSON 预览', promptTitle: english ? 'What should your agent do?' : '想让 Agent 做什么？', promptOptional: english ? 'Optional' : '可选', copyJson: english ? 'Copy JSON' : '复制 JSON', exportMask: english ? 'Export Mask (PNG)' : '导出黑白蒙版 PNG'
+        jsonPreview: english ? 'JSON preview' : 'JSON 预览', promptTitle: english ? 'What should your agent do?' : '想让 Agent 做什么？', promptOptional: english ? 'Optional' : '可选', copyJson: english ? 'Copy JSON' : '复制 JSON', exportMask: english ? 'Export Mask PNG' : '导出蒙版 PNG',
+        overallNote: english ? 'Overall note' : '整体说明', deleteNoteRegion: english ? 'Delete' : '删除',
+        website: english ? 'Website' : '官网',
+        selectAreaNote: english ? 'Select an area to add a note' : '选择一个区域填写说明',
+        areaPlaceholder: english ? 'Describe this area’s edit, or leave blank' : '只说明这个区域要怎样修改，可留空',
+        overallPlaceholder: english ? 'Instructions for the whole image, or leave blank' : '对整张图片的要求，可留空'
       };
       document.querySelectorAll('[data-i18n]').forEach((element) => { if (values[element.dataset.i18n]) element.innerHTML = values[element.dataset.i18n]; });
       document.documentElement.lang = english ? 'en' : 'zh-CN';
@@ -2036,6 +2173,8 @@ SOFTWARE.
       verticalScrollbar.setAttribute('aria-label', english ? 'Pan image vertically' : '垂直移动图片');
       languageToggle.querySelector('span').textContent = english ? '中文' : 'English';
       languageToggle.setAttribute('aria-label', english ? 'Switch to Chinese' : '切换为 English');
+      websiteLink.setAttribute('aria-label', english ? 'Open website' : '打开官网');
+      githubLink.setAttribute('aria-label', english ? 'Open GitHub source' : '打开 GitHub 源码');
       refreshEmptyCanvasTitle();
       updateFocusLabel();
       renderedJson = null;
@@ -2061,7 +2200,12 @@ SOFTWARE.
         ignored_path_responses: state.ignoredPathResponses,
         last_ignored_path_response_nonce: state.lastIgnoredPathResponseNonce,
         viewport: { ...state.viewport },
-        editor_regions: copyRegions(),
+        editor_regions: snapshotRegions(),
+        editor_region_ids: state.regions.map((region) => region.id ?? null),
+        editor_region_prompts: state.regions.map((region) => region.prompt ?? ''),
+        overall_prompt: state.overallPrompt,
+        note_scope: state.noteScope,
+        note_region_id: state.noteRegionId,
         selected_region: state.selectedRegion,
         selected_node: state.selectedNode,
         public_json: output?.payload ?? null,
@@ -2226,7 +2370,25 @@ SOFTWARE.
       event.preventDefault();
       panViewport(dx, dy);
     }, { passive: false });
-    promptInput.addEventListener('input', () => { state.notice = null; refreshPromptOnly(); });
+    promptInput.addEventListener('input', () => {
+      state.notice = null;
+      commitPromptInput();
+      refreshPromptOnly();
+    });
+    overallTab.addEventListener('click', () => {
+      commitPromptInput();
+      setOverallNotes();
+      promptInput.disabled = false;
+      promptInput.value = state.overallPrompt;
+      refreshPromptOnly();
+      render();
+    });
+    deleteNoteRegionButton.addEventListener('click', () => {
+      const region = noteRegion();
+      if (!region) return;
+      state.selectedRegion = state.regions.indexOf(region);
+      deleteSelectedRegion();
+    });
     undoButton.addEventListener('click', undo);
     clearButton.addEventListener('click', clearRegions);
     fitButton.addEventListener('click', fitViewport);
@@ -2284,13 +2446,19 @@ SOFTWARE.
     });
     window.addEventListener('resize', handleWindowResize);
     window.addEventListener('unload', () => { disposeTask(state.task); disposeTask(state.pendingImport); });
-    languageToggle.hidden = !bridge();
+    const macHost = Boolean(bridge());
+    macTopChrome.hidden = !macHost;
+    languageToggle.hidden = !macHost;
+    websiteLink.hidden = !macHost;
+    githubLink.hidden = !macHost;
     if (focusButton) focusButton.hidden = !webShell;
     languageToggle.addEventListener('click', () => {
       const language = state.language === 'zh' ? 'en' : 'zh';
       setLanguage(language);
       bridge()?.postMessage({ type: 'language-preference', language });
     });
+    websiteLink.addEventListener('click', () => bridge()?.postMessage({ type: 'open-external', destination: 'website' }));
+    githubLink.addEventListener('click', () => bridge()?.postMessage({ type: 'open-external', destination: 'github' }));
     focusButton?.addEventListener('click', () => {
       if (!webShell) return;
       webAdapter()?.requestFocus?.(!editorFocused);
@@ -2298,6 +2466,12 @@ SOFTWARE.
     window.FlashMaskP0 = {
       importWebFile,
       beginMacImport: (request) => beginImport({ platform: 'mac', import_nonce: request.import_nonce, file_name: request.file_name, image_url: request.image_url, origin: request.origin }),
+      needsReplaceConfirmation: () => {
+        commitPromptInput();
+        if (state.regions.length > 0) return true;
+        if (String(state.overallPrompt || '').trim()) return true;
+        return state.regions.some((region) => String(region.prompt || '').trim());
+      },
       setNativeDragHighlight: (request) => canvasViewport.classList.toggle('dragging', request?.active === true),
       acceptNativePath,
       acceptNativeCopy,

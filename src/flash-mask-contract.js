@@ -6,6 +6,7 @@
   'use strict';
 
   const DEFAULT_INSTRUCTION = 'This JSON identifies areas the user selected in the source image. Each polygon marks one selected area; multiple polygons form a combined selection; the first and last points are connected automatically. Interpret the selected areas and any `prompt` in the context of the current conversation. If `prompt` is present, it expresses the user\'s intent regarding the image.';
+  const DEFAULT_INSTRUCTION_1_1 = 'This JSON identifies areas the user selected in the source image. Each polygon marks one selected area; multiple polygons form a combined selection; the first and last points are connected automatically. The top-level `prompt`, if present, applies to the whole image. Each region\'s `prompt`, if present, applies only to that region. Interpret these texts in the context of the current conversation. The combined geometry marks range only; it does not assign a processing order among regions.';
   const COORDINATE_SYSTEM = { origin: 'top-left', x_direction: 'right', y_direction: 'down' };
   const CRC_TABLE = (() => {
     const table = new Uint32Array(256);
@@ -190,9 +191,15 @@
     for (const field of ['mask_spec_version', 'instruction', 'source_image', 'coordinate_system', 'regions']) {
       if (!(field in payload)) errors.push(`payload.${field} is required`);
     }
-    if (payload.mask_spec_version !== '1.0') errors.push('payload.mask_spec_version must equal 1.0');
+    const version = payload.mask_spec_version;
+    const is11 = version === '1.1';
+    if (version !== '1.0' && !is11) errors.push('payload.mask_spec_version must equal 1.0 or 1.1');
+    if (profile === 'web' && is11) errors.push('payload.mask_spec_version must equal 1.0');
     if (typeof payload.instruction !== 'string' || !payload.instruction.trim()) errors.push('payload.instruction must be a non-empty string');
     if ('prompt' in payload && (typeof payload.prompt !== 'string' || !payload.prompt.trim())) errors.push('payload.prompt must be omitted or non-blank text');
+    const regionFields = is11
+      ? ['id', 'shape', 'points_px', 'points_normalized', 'prompt']
+      : ['id', 'shape', 'points_px', 'points_normalized'];
 
     const source = payload.source_image;
     if (!isObject(source)) {
@@ -231,10 +238,13 @@
         errors.push(`${path} must be an object`);
         continue;
       }
-      addUnknownFieldErrors(region, ['id', 'shape', 'points_px', 'points_normalized'], path, errors);
+      addUnknownFieldErrors(region, regionFields, path, errors);
       for (const field of ['id', 'shape', 'points_px', 'points_normalized']) if (!(field in region)) errors.push(`${path}.${field} is required`);
       if (!Number.isInteger(region.id) || region.id <= 0) errors.push(`${path}.id must be a positive integer`);
       if (region.shape !== 'polygon') errors.push(`${path}.shape must equal polygon`);
+      if ('prompt' in region && (typeof region.prompt !== 'string' || !region.prompt.trim())) {
+        errors.push(`${path}.prompt must be omitted or non-blank text`);
+      }
       validateLocalPixelPoints(region.points_px, `${path}.points_px`, errors);
       validateLocalNormalizedPoints(region.points_normalized, `${path}.points_normalized`, errors);
     }
@@ -257,8 +267,18 @@
     return [undefined, undefined];
   }
 
-  function createPayload({ platform, sourceImage, regions, prompt, instruction = DEFAULT_INSTRUCTION }) {
+  function regionPointList(region) {
+    if (Array.isArray(region)) return region;
+    if (isObject(region) && Array.isArray(region.points)) return region.points;
+    return [];
+  }
+
+  function createPayload({ platform, sourceImage, regions, prompt, instruction }) {
     if (!['web', 'mac'].includes(platform)) throw new Error('platform must be web or mac');
+    const version = platform === 'mac' ? '1.1' : '1.0';
+    const resolvedInstruction = instruction === undefined
+      ? (version === '1.1' ? DEFAULT_INSTRUCTION_1_1 : DEFAULT_INSTRUCTION)
+      : instruction;
     const source = {
       file_name: sourceImage?.file_name,
       width: sourceImage?.width,
@@ -266,18 +286,21 @@
     };
     if (platform === 'mac') source.file_path = sourceImage?.file_path;
     const payload = {
-      mask_spec_version: '1.0',
-      instruction,
+      mask_spec_version: version,
+      instruction: resolvedInstruction,
       source_image: source,
       coordinate_system: { ...COORDINATE_SYSTEM },
       regions: (regions || []).map((region, index) => {
-        const points = region.map(inputPoint);
-        return {
-          id: index + 1,
+        const points = regionPointList(region).map(inputPoint);
+        const stableId = Number.isInteger(region?.id) && region.id > 0 ? region.id : index + 1;
+        const entry = {
+          id: version === '1.1' ? stableId : index + 1,
           shape: 'polygon',
           points_px: points,
           points_normalized: points.map(([x, y]) => [round5(x / source.width), round5(y / source.height)])
         };
+        if (version === '1.1' && typeof region?.prompt === 'string' && region.prompt.trim()) entry.prompt = region.prompt;
+        return entry;
       })
     };
     if (prompt !== undefined && prompt !== null) {
@@ -445,6 +468,7 @@
   return {
     COORDINATE_SYSTEM,
     DEFAULT_INSTRUCTION,
+    DEFAULT_INSTRUCTION_1_1,
     assertValidPayload,
     createPayload,
     encodeMaskPng,

@@ -20,6 +20,14 @@
 
 Flash Mask is a lightweight, native macOS companion app built for AI image editing and visual workflows. When collaborating with AI models or coding agents, text prompts alone often fail to specify exact boundaries, resulting in unintended changes across the entire image or edits in the wrong spot.
 
+On macOS, Flash Mask outputs JSON 1.1 with an instruction for the whole image and optional notes for individual regions. The website's web app remains on JSON 1.0.
+
+### Mac App
+
+- Paste a screenshot directly from the clipboard.
+- Add one instruction for the whole image and optional notes for individual regions.
+- Use a dedicated settings window to switch language, check for updates, and open the website, help, GitHub source, or support page.
+
 Instead of wrestling with lasso tools, fill layers, and manual exports in complex image editors, Flash Mask converts your selections into agent-ready coordinates in seconds:
 
 - **Structured JSON coordinates by default**: Copy standardized JSON containing pixel coordinates, normalized coordinates, source image dimensions, local absolute file paths, and optional edit instructions (prompts) with one click. Paste directly into your AI chat or agent workflow.
@@ -36,23 +44,23 @@ Instead of wrestling with lasso tools, fill layers, and manual exports in comple
 
 ## Quick Start
 
-1. **Drop an image**: Drag and drop a PNG, JPEG/JPG, or WebP image into the window, or click **Open Image**. Pan, zoom, and toggle between **Fit** and **Actual Size** (1:1 pixel) views.
+1. **Open an image**: Drag and drop a PNG, JPEG/JPG, or WebP image into the window, click **Open Image**, or paste a screenshot from the clipboard. Pan, zoom, and toggle between **Fit** and **Actual Size** (1:1 pixel) views.
 2. **Outline and refine regions**:
    - Click and drag on the image to outline a freehand area; release the mouse button to add it. Draw multiple separate regions as needed (automatically merged as a union).
    - Click any existing region to fine-tune it: drag the entire selection to reposition it, or drag, add, and delete individual polygon vertices.
-   - Optional: Enter your edit instructions in the **"What should your agent do?"** field (e.g., `"Keep the mountain and remove the clouds."`).
+   - Optional: Enter an instruction for the whole image in the **"What should your agent do?"** field, then select a region to add a note for that region.
 3. **Copy JSON or export mask**:
    - Click **Copy JSON**: Copies structured dataâ€”including the local file path, image dimensions, polygon coordinates, and edit promptâ€”to your clipboard to paste directly into your AI or agent.
-   - Click **Export Mask (PNG)**: Opens the macOS save sheet to export a crisp black-and-white PNG mask matching the source image dimensions.
+   - Click **Export Mask PNG**: Opens the macOS save sheet to export a crisp black-and-white PNG mask matching the source image dimensions. The mask marks the selected areas; notes are included in JSON.
 
 ## JSON Coordinate Data Format
 
-Flash Mask outputs versioned, self-describing JSON with dual coordinate systemsâ€”absolute pixel coordinates and normalized `[0.0, 1.0]` coordinates (origin at top-left, X increasing rightward, Y increasing downward):
+Flash Mask outputs versioned, self-describing JSON with dual coordinate systemsâ€”absolute pixel coordinates and normalized `[0.0, 1.0]` coordinates (origin at top-left, X increasing rightward, Y increasing downward). The Mac app uses JSON 1.1; the website's web app uses JSON 1.0:
 
 ```json
 {
-  "mask_spec_version": "1.0",
-  "instruction": "This JSON identifies areas the user selected in the source image. Each polygon marks one selected area; multiple polygons form a combined selection; the first and last points are connected automatically. Interpret the selected areas and any `prompt` in the context of the current conversation. If `prompt` is present, it expresses the user's intent regarding the image.",
+  "mask_spec_version": "1.1",
+  "instruction": "This JSON identifies areas the user selected in the source image. Each polygon marks one selected area; multiple polygons form a combined selection; the first and last points are connected automatically. The top-level `prompt`, if present, applies to the whole image. Each region's `prompt`, if present, applies only to that region. Interpret these texts in the context of the current conversation. The combined geometry marks range only; it does not assign a processing order among regions.",
   "source_image": {
     "file_name": "example.jpg",
     "width": 1920,
@@ -64,13 +72,21 @@ Flash Mask outputs versioned, self-describing JSON with dual coordinate systemsâ
     "x_direction": "right",
     "y_direction": "down"
   },
-  "prompt": "Keep the mountain and remove the clouds.",
+  "prompt": "Keep the building",
   "regions": [
     {
       "id": 1,
       "shape": "polygon",
       "points_px": [[96, 108], [480, 108], [480, 432], [96, 432]],
-      "points_normalized": [[0.05, 0.1], [0.25, 0.1], [0.25, 0.4], [0.05, 0.4]]
+      "points_normalized": [[0.05, 0.1], [0.25, 0.1], [0.25, 0.4], [0.05, 0.4]],
+      "prompt": "Remove stray lines"
+    },
+    {
+      "id": 3,
+      "shape": "polygon",
+      "points_px": [[600, 108], [900, 108], [900, 432], [600, 432]],
+      "points_normalized": [[0.3125, 0.1], [0.46875, 0.1], [0.46875, 0.4], [0.3125, 0.4]],
+      "prompt": "Use a light gray background"
     }
   ]
 }
@@ -78,12 +94,14 @@ Flash Mask outputs versioned, self-describing JSON with dual coordinate systemsâ
 
 ### Field Reference
 
-- `mask_spec_version`: Specification version (currently `"1.0"`).
+- `mask_spec_version`: Specification version. The Mac app currently emits `"1.1"`; the website's web app remains on `"1.0"`.
 - `instruction`: Embedded self-describing guidance that instructs downstream AI models or agents on how to interpret polygons and user intent.
 - `source_image`: Source file name, pixel dimensions (`width`, `height`), and the absolute local Mac file path (`file_path` is specific to the macOS app so local agents can directly access the file).
 - `coordinate_system`: Coordinate system definition (fixed at top-left origin, X increasing rightward, Y increasing downward).
-- `prompt`: Optional. Task-level user instructions for the current image.
-- `regions`: List of marked regions. Each region includes integer pixel coordinates (`points_px` as `[x, y]`) and dimensionless normalized coordinates (`points_normalized` as `[x/width, y/height]`). Start and end vertices close automatically, and multiple regions form a combined union.
+- `prompt`: Optional. In Mac JSON 1.1, this instruction applies to the whole image.
+- `regions`: List of marked regions. Each region includes integer pixel coordinates (`points_px` as `[x, y]`) and dimensionless normalized coordinates (`points_normalized` as `[x/width, y/height]`). Mac JSON 1.1 may include an optional `prompt` for a specific region; region IDs remain stable when another region is deleted. Start and end vertices close automatically, and multiple regions form a combined union.
+
+Strict JSON 1.0 consumers must upgrade their validator before accepting JSON 1.1. Flash Mask does not silently drop region notes.
 
 ## Features
 
@@ -91,7 +109,7 @@ Flash Mask outputs versioned, self-describing JSON with dual coordinate systemsâ
 - **Multi-Region Selection**: Draw multiple irregular selections on a single image; selections automatically combine into a unified mask upon export.
 - **Interactive Vertex Editing**: Drag entire selections to reposition them, or precisely add, move, and remove polygon vertices.
 - **Smooth Canvas Navigation**: Pan and zoom smoothly, with quick toggles for **Fit** and **Actual Size** (1:1 pixel) views.
-- **Task-Level Prompts**: Attach optional text instructions to clarify your intent for the marked regions.
+- **Image and Region Notes**: Attach an optional instruction to the whole image and add notes to individual regions in the Mac app.
 - **Dual Coordinate Systems**: Generates both absolute pixel coordinates and resolution-independent normalized coordinates to support varied agent and model schemas.
 - **Original Resolution Fidelity**: Black-and-white PNG masks match source image dimensions 1:1, rendered with pure white selections, pure black backgrounds, and crisp, unfeathered edges.
 - **Direct Local File Paths**: The macOS app outputs verified absolute file paths in JSON so local automation scripts and agents can locate files instantly.
@@ -110,7 +128,7 @@ This repository provides the complete open-source code for the Flash Mask macOS 
 - Native macOS AppKit / WKWebView host wrapper and Xcode project (`macos/`)
 - Embedded HTML / JavaScript editor core (`index.html`)
 - Coordinate contract protocol parsing, selection vertex cleaning, and mask generation logic (`src/`)
-- Flash Mask 1.0 JSON Coordinate Contract validation schemas (`schemas/`)
+- Flash Mask 1.0 and 1.1 JSON Coordinate Contract validation schemas (`schemas/`)
 - Core automated contract and unit test suite (`tests/`)
 
 *Note: This repository contains the standalone macOS application and its editing core. It does not include standalone web deployment scripts or commercial backend services (such as marketing landing pages, quota/ad systems, analytics, or hosted infrastructure). Under the Apache-2.0 license, the core editing module and shared data contracts may be freely ported and adapted.*
@@ -165,7 +183,7 @@ The test suite covers:
 |---|---|
 | `index.html` | Embedded editor interface, canvas interactions, and UI state machine |
 | `src/` | Coordinate contract parsing, mask rasterization, and selection vertex cleaning algorithms |
-| `schemas/` | Official JSON Schema definitions for the Flash Mask 1.0 Coordinate Contract |
+| `schemas/` | Official JSON Schema definitions for the Flash Mask 1.0 and 1.1 Coordinate Contracts |
 | `macos/` | Native AppKit / WKWebView host wrapper, security-scoped file access, and Xcode project |
 | `tests/` | Unit tests, contract validation suites, and test fixtures |
 

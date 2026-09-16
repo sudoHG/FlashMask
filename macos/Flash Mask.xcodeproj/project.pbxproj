@@ -13,6 +13,7 @@
 		A10000000000000000000004 /* assets in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000006 /* assets */; };
 		A10000000000000000000005 /* src in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000007 /* src */; };
 		A10000000000000000000006 /* FlashMask.icns in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000004 /* FlashMask.icns */; };
+		A10000000000000000000007 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000010 /* InfoPlist.strings */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -25,6 +26,8 @@
 		A20000000000000000000007 /* src */ = {isa = PBXFileReference; lastKnownFileType = folder; name = src; path = ../src; sourceTree = "<group>"; };
 		A20000000000000000000008 /* FlashMask.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = FlashMask.entitlements; sourceTree = "<group>"; };
 		A20000000000000000000009 /* Flash Mask.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Flash Mask.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		A20000000000000000000011 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
+		A20000000000000000000012 /* zh-Hans */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hans"; path = "zh-Hans.lproj/InfoPlist.strings"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -52,6 +55,7 @@
 				A20000000000000000000001 /* App.swift */,
 				A20000000000000000000002 /* main.swift */,
 				A20000000000000000000003 /* Info.plist */,
+				A20000000000000000000010 /* InfoPlist.strings */,
 				A20000000000000000000008 /* FlashMask.entitlements */,
 				A20000000000000000000004 /* FlashMask.icns */,
 				A20000000000000000000005 /* index.html */,
@@ -111,6 +115,7 @@
 			knownRegions = (
 				en,
 				Base,
+				"zh-Hans",
 			);
 			mainGroup = A40000000000000000000001;
 			productRefGroup = A40000000000000000000003 /* Products */;
@@ -131,6 +136,7 @@
 				A10000000000000000000004 /* assets in Resources */,
 				A10000000000000000000005 /* src in Resources */,
 				A10000000000000000000006 /* FlashMask.icns in Resources */,
+				A10000000000000000000007 /* InfoPlist.strings in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -147,6 +153,18 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXVariantGroup section */
+		A20000000000000000000010 /* InfoPlist.strings */ = {
+			isa = PBXVariantGroup;
+			children = (
+				A20000000000000000000011 /* en */,
+				A20000000000000000000012 /* zh-Hans */,
+			);
+			name = InfoPlist.strings;
+			sourceTree = "<group>";
+		};
+/* End PBXVariantGroup section */
 
 /* Begin XCBuildConfiguration section */
 		A80000000000000000000001 /* Debug */ = {
