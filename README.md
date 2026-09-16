@@ -51,7 +51,7 @@ Instead of wrestling with lasso tools, fill layers, and manual exports in comple
    - Optional: Enter an instruction for the whole image in the **"What should your agent do?"** field, then select a region to add a note for that region.
 3. **Copy JSON or export mask**:
    - Click **Copy JSON**: Copies structured data—including the local file path, image dimensions, polygon coordinates, and edit prompt—to your clipboard to paste directly into your AI or agent.
-   - Click **Export Mask PNG**: Opens the macOS save sheet to export a crisp black-and-white PNG mask matching the source image dimensions.
+   - Click **Export Mask PNG**: Opens the macOS save sheet to export a crisp black-and-white PNG mask matching the source image dimensions. The mask marks the selected areas; notes are included in JSON.
 
 ## JSON Coordinate Data Format
 
