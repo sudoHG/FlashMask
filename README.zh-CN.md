@@ -1,6 +1,6 @@
 # Flash Mask
 
-[![Release](https://img.shields.io/github/v/release/sudoHG/FlashMask?style=flat-square&label=release)](https://github.com/sudoHG/FlashMask/releases/latest) [![Stars](https://img.shields.io/github/stars/sudoHG/FlashMask?style=flat-square&label=stars)](https://github.com/sudoHG/FlashMask/stargazers) [![License](https://img.shields.io/badge/license-Apache--2.0-blue?style=flat-square)](LICENSE) [![macOS](https://img.shields.io/badge/macOS-26%2B-black?style=flat-square)](https://apps.apple.com/cn/app/flash-mask/id6803817818?mt=12) [![Apple Silicon](https://img.shields.io/badge/Apple_Silicon-arm64-black?style=flat-square)](https://apps.apple.com/cn/app/flash-mask/id6803817818?mt=12) [![README views](https://hits.sh/github.com/sudoHG/FlashMask.svg?style=flat-square&label=README%20views)](https://hits.sh/github.com/sudoHG/FlashMask/)
+[![Release](https://img.shields.io/github/v/release/sudoHG/FlashMask?style=flat-square&label=release)](https://github.com/sudoHG/FlashMask/releases/latest) [![Stars](https://img.shields.io/github/stars/sudoHG/FlashMask?style=flat-square&label=stars)](https://github.com/sudoHG/FlashMask/stargazers) [![License](https://img.shields.io/badge/license-Apache--2.0-blue?style=flat-square)](LICENSE) [![macOS](https://img.shields.io/badge/macOS-13%2B-black?style=flat-square)](https://apps.apple.com/cn/app/flash-mask/id6803817818?mt=12) [![Universal](https://img.shields.io/badge/Universal-arm64%20%2B%20x86__64-black?style=flat-square)](https://apps.apple.com/cn/app/flash-mask/id6803817818?mt=12) [![README views](https://hits.sh/github.com/sudoHG/FlashMask.svg?style=flat-square&label=README%20views)](https://hits.sh/github.com/sudoHG/FlashMask/)
 
 简体中文 | [English](README.md)
 
@@ -137,8 +137,8 @@ Flash Mask 输出带版本标识、自解释的标准 JSON 数据，内置像素
 
 ### 环境要求
 
-- Apple Silicon Mac（`arm64` 芯片架构），运行 **macOS 26** 或更高版本
-- 安装完整 **Xcode**，包含 **macOS 26 SDK**
+- 安装完整 **Xcode** 的 Mac；构建主机的 macOS 版本必须受该 Xcode 版本支持
+- App 最低目标为 **macOS 13.0**，并构建为通用二进制（`arm64` + `x86_64`）
 - 纯 Swift、AppKit 与 WebKit 构建，无外部 Swift 依赖包（Zero external Swift dependencies）
 
 ### 构建命令
@@ -151,15 +151,33 @@ xcodebuild \
   -scheme 'Flash Mask' \
   -configuration Release \
   -derivedDataPath '.derivedData/local' \
+  ONLY_ACTIVE_ARCH=NO \
   CODE_SIGNING_ALLOWED=NO \
   build
 ```
 
 **构建产物路径**：`.derivedData/local/Build/Products/Release/Flash Mask.app`
 
-该命令执行无签名本地构建，编译原生包装外壳并将 `index.html` 及应用资源打包成独立 App。此构建命令已在 macOS 26.6.2 / Xcode 26.6 环境下实测验证。
+该命令创建无签名本地构建，编译原生包装外壳并将 `index.html` 及应用资源打包成独立 App。Release 配置的最低系统为 macOS 13.0，并同时构建 `arm64` 与 `x86_64`。官方 App Store 版本通过独立的 Xcode Archive 与分发流程生成，不使用此本地构建命令。
 
-> **签名与分发说明**：若需在 Xcode 中直接调试运行或生成已签名的二进制产物，请在 Xcode 的 *Signing & Capabilities* 中选择您自己的 Apple 开发者证书（Development Team）。若您分发基于本源码的衍生版本，请使用您自己的 Bundle ID、应用名称和品牌资产，并自行负责代码签名与平台审核。
+### 一键构建脚本
+
+也可以使用仓库自带的 `build.sh` 脚本（运行 `./build.sh --help` 查看全部选项）：
+
+```sh
+./build.sh
+./build.sh --version 1.3 --build-number 8 --dmg
+```
+
+脚本默认版本为 `1.2`、构建号为 `7`；可用 `--version` 和 `--build-number` 覆盖。它会检查构建产物的版本、最低 macOS 版本和两种架构。`--dmg` 会把无签名 App 打包为本地测试 DMG，该 DMG 不适合通过 Gatekeeper 分发。
+
+若要在 Mac App Store 之外分发，请先使用自己的 **Developer ID Application** 身份和安全时间戳签名，验证代码签名后提交公证；Apple 接受后钉附并验证公证票据。随后用以下命令打包同一个 App：
+
+```sh
+./build.sh --package-app "/path/to/stapled/Flash Mask.app"
+```
+
+`--package-app` 会检查 Developer ID 签名、安全时间戳、公证票据、macOS 13.0 最低版本和双架构，然后直接生成带版本号的 DMG，不会再次运行 `xcodebuild` 或签名。DMG 本身仍未签名；直接分发时，对外层容器的签名、公证和钉附需要另行完成。此脚本不签名、不公证、不归档，也不生成官方 App Store 版本。衍生版本必须使用自己的 Bundle ID、应用名称和品牌资产。
 
 ## 运行核心测试
 

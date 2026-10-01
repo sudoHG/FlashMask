@@ -1,6 +1,6 @@
 # Flash Mask
 
-[![Release](https://img.shields.io/github/v/release/sudoHG/FlashMask?style=flat-square&label=release)](https://github.com/sudoHG/FlashMask/releases/latest) [![Stars](https://img.shields.io/github/stars/sudoHG/FlashMask?style=flat-square&label=stars)](https://github.com/sudoHG/FlashMask/stargazers) [![License](https://img.shields.io/badge/license-Apache--2.0-blue?style=flat-square)](LICENSE) [![macOS](https://img.shields.io/badge/macOS-26%2B-black?style=flat-square)](https://apps.apple.com/us/app/flash-mask/id6803817818?mt=12) [![Apple Silicon](https://img.shields.io/badge/Apple_Silicon-arm64-black?style=flat-square)](https://apps.apple.com/us/app/flash-mask/id6803817818?mt=12) [![README views](https://hits.sh/github.com/sudoHG/FlashMask.svg?style=flat-square&label=README%20views)](https://hits.sh/github.com/sudoHG/FlashMask/)
+[![Release](https://img.shields.io/github/v/release/sudoHG/FlashMask?style=flat-square&label=release)](https://github.com/sudoHG/FlashMask/releases/latest) [![Stars](https://img.shields.io/github/stars/sudoHG/FlashMask?style=flat-square&label=stars)](https://github.com/sudoHG/FlashMask/stargazers) [![License](https://img.shields.io/badge/license-Apache--2.0-blue?style=flat-square)](LICENSE) [![macOS](https://img.shields.io/badge/macOS-13%2B-black?style=flat-square)](https://apps.apple.com/us/app/flash-mask/id6803817818?mt=12) [![Universal](https://img.shields.io/badge/Universal-arm64%20%2B%20x86__64-black?style=flat-square)](https://apps.apple.com/us/app/flash-mask/id6803817818?mt=12) [![README views](https://hits.sh/github.com/sudoHG/FlashMask.svg?style=flat-square&label=README%20views)](https://hits.sh/github.com/sudoHG/FlashMask/)
 
 [简体中文](README.zh-CN.md) | English
 
@@ -137,8 +137,8 @@ This repository provides the complete open-source code for the Flash Mask macOS 
 
 ### Prerequisites
 
-- Apple Silicon Mac (`arm64` architecture) running **macOS 26** or later
-- Full installation of **Xcode** with the **macOS 26 SDK**
+- A Mac with a full **Xcode** installation; the host macOS version must be supported by that Xcode release
+- The app targets **macOS 13.0 or later** and builds as a universal binary (`arm64` + `x86_64`)
 - Pure Swift, AppKit, and WebKit build—zero external Swift package dependencies
 
 ### Build Command
@@ -151,15 +151,33 @@ xcodebuild \
   -scheme 'Flash Mask' \
   -configuration Release \
   -derivedDataPath '.derivedData/local' \
+  ONLY_ACTIVE_ARCH=NO \
   CODE_SIGNING_ALLOWED=NO \
   build
 ```
 
 **Build output location**: `.derivedData/local/Build/Products/Release/Flash Mask.app`
 
-This command runs an unsigned local build, compiling the native wrapper and bundling `index.html` and application resources into a standalone app. Verified on macOS 26.6.2 and Xcode 26.6.
+This command creates an unsigned local build, compiling the native wrapper and bundling `index.html` and application resources into a standalone app. The Release configuration targets macOS 13.0 and builds both `arm64` and `x86_64` slices. The official App Store build is produced through the separate Xcode Archive and distribution workflow, not this local build command.
 
-> **Code Signing & Distribution**: To run directly from Xcode or produce signed binaries, select your own Development Team under *Signing & Capabilities* in Xcode. If you distribute derivative builds based on this source code, you must use your own Bundle ID, app name, and brand assets, and manage your own code signing and platform review.
+### One-Command Build Script
+
+Alternatively, use the included `build.sh` script (run `./build.sh --help` for details):
+
+```sh
+./build.sh
+./build.sh --version 1.3 --build-number 8 --dmg
+```
+
+The script defaults to version `1.2` and build `7`; `--version` and `--build-number` override those values. It checks the built app's version, minimum macOS version, and both architecture slices. `--dmg` packages that unsigned app for local testing; the resulting DMG is not suitable for Gatekeeper distribution.
+
+For distribution outside the Mac App Store, sign the app with your own **Developer ID Application** identity and a secure timestamp, verify its code signature, submit it for notarization, and staple and validate the accepted ticket. Then package that exact app with:
+
+```sh
+./build.sh --package-app "/path/to/stapled/Flash Mask.app"
+```
+
+`--package-app` verifies the Developer ID signature, secure timestamp, notarization ticket, macOS 13.0 minimum, and both architecture slices, then creates a versioned DMG without running `xcodebuild` or signing again. The DMG itself remains unsigned; signing, notarizing, and stapling that outer container are separate steps for direct distribution. The helper does not sign, notarize, archive, or produce an official App Store build. Derivative builds must use their own Bundle ID, app name, and brand assets.
 
 ## Running Core Tests
 
