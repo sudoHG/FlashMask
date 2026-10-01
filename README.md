@@ -133,6 +133,10 @@ This repository provides the complete open-source code for the Flash Mask macOS 
 
 *Note: This repository contains the standalone macOS application and its editing core. It does not include standalone web deployment scripts or commercial backend services (such as marketing landing pages, quota/ad systems, analytics, or hosted infrastructure). Under the Apache-2.0 license, the core editing module and shared data contracts may be freely ported and adapted.*
 
+## Contributing
+
+See the [contribution guide](贡献指南.md) for local checks, CI coverage, and pull request details.
+
 ## Building the Mac App from Source
 
 ### Prerequisites
