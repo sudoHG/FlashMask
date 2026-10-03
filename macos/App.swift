@@ -46,13 +46,14 @@ struct FlashMaskMainMenuTitles: Equatable {
     let help: String
 }
 
-func flashMaskMainMenuTitles(isChinese: Bool) -> FlashMaskMainMenuTitles {
-    FlashMaskMainMenuTitles(
+func flashMaskMainMenuTitles(isChinese: Bool, language: String? = nil) -> FlashMaskMainMenuTitles {
+    let effectiveLanguage = language ?? (isChinese ? "zh" : "en")
+    return FlashMaskMainMenuTitles(
         app: "Flash Mask",
-        file: isChinese ? "文件" : "File",
-        edit: isChinese ? "编辑" : "Edit",
-        window: isChinese ? "窗口" : "Window",
-        help: isChinese ? "帮助" : "Help"
+        file: flashMaskText("native.menu.file", language: effectiveLanguage, fallback: isChinese ? "文件" : "File"),
+        edit: flashMaskText("native.menu.edit", language: effectiveLanguage, fallback: isChinese ? "编辑" : "Edit"),
+        window: flashMaskText("native.menu.window", language: effectiveLanguage, fallback: isChinese ? "窗口" : "Window"),
+        help: flashMaskText("native.menu.help", language: effectiveLanguage, fallback: isChinese ? "帮助" : "Help")
     )
 }
 
@@ -62,16 +63,16 @@ func flashMaskExternalURL(destination: String, language: String) -> URL? {
     switch destination {
     case "website":
         components.host = "flashmask.net"
-        components.path = language == "zh" ? "/zh/" : "/"
+        components.path = language.hasPrefix("zh") ? "/zh/" : "/"
     case "help":
         components.host = "flashmask.net"
-        components.path = language == "zh" ? "/zh/help/" : "/help/"
+        components.path = language.hasPrefix("zh") ? "/zh/help/" : "/help/"
     case "github":
         components.host = "github.com"
         components.path = "/sudoHG/FlashMask"
     case "feedback":
         components.host = "flashmask.net"
-        components.path = language == "zh" ? "/zh/support/" : "/support/"
+        components.path = language.hasPrefix("zh") ? "/zh/support/" : "/support/"
     default:
         return nil
     }
@@ -80,7 +81,7 @@ func flashMaskExternalURL(destination: String, language: String) -> URL? {
 
 let flashMaskAppStoreTrackID: Int64 = 6_803_817_818
 let flashMaskAppStoreBundleID = "com.331workc.flashmask"
-// Whole-check bound recorded for 331-474. SPEC called 15s an engineering suggestion, not a product constant.
+// Bound the complete update check, including retries, to 15 seconds.
 let flashMaskUpdateCheckTimeout: TimeInterval = 15
 
 enum FlashMaskUpdateFailure: String, Equatable, Error {
@@ -226,16 +227,17 @@ func flashMaskSettingsIconImage() -> NSImage? {
     return NSApp.applicationIconImage
 }
 
-func flashMaskLocalVersionLine(shortVersion: String?, build: String?, isChinese: Bool) -> String {
+func flashMaskLocalVersionLine(shortVersion: String?, build: String?, isChinese: Bool, language: String? = nil) -> String {
+    let effectiveLanguage = language ?? (isChinese ? "zh" : "en")
     let trimmedVersion = shortVersion?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
     let resolvedVersion = trimmedVersion.isEmpty ? "—" : trimmedVersion
     let buildNumber = build?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
     if !buildNumber.isEmpty {
-        return isChinese
+        return flashMaskText("native.version.withBuild", language: effectiveLanguage, arguments: ["version": resolvedVersion, "build": buildNumber], fallback: isChinese
             ? "版本 \(resolvedVersion)（构建 \(buildNumber)）"
-            : "Version \(resolvedVersion) (build \(buildNumber))"
+            : "Version \(resolvedVersion) (build \(buildNumber))")
     }
-    return isChinese ? "版本 \(resolvedVersion)" : "Version \(resolvedVersion)"
+    return flashMaskText("native.version.withoutBuild", language: effectiveLanguage, arguments: ["version": resolvedVersion], fallback: isChinese ? "版本 \(resolvedVersion)" : "Version \(resolvedVersion)")
 }
 
 func flashMaskParseAppVersion(_ raw: String) -> [Int]? {
@@ -370,72 +372,75 @@ func flashMaskDefaultUpdateFetcher(
     task.resume()
 }
 
-func flashMaskUpdateFailureCopy(_ reason: FlashMaskUpdateFailure, isChinese: Bool) -> String {
+func flashMaskUpdateFailureCopy(_ reason: FlashMaskUpdateFailure, isChinese: Bool, language: String? = nil) -> String {
+    let effectiveLanguage = language ?? (isChinese ? "zh" : "en")
     switch reason {
     case .storefrontUnknown:
-        return isChinese ? "无法确定 App Store 地区" : "Couldn’t determine the App Store region."
+        return flashMaskText("native.update.failure.storefrontUnknown", language: effectiveLanguage, fallback: isChinese ? "无法确定 App Store 地区" : "Couldn’t determine the App Store region.")
     case .emptyResult:
-        return isChinese ? "当前 App Store 地区未找到 Flash Mask。" : "Flash Mask wasn’t found in this App Store region."
+        return flashMaskText("native.update.failure.emptyResult", language: effectiveLanguage, fallback: isChinese ? "当前 App Store 地区未找到 Flash Mask。" : "Flash Mask wasn’t found in this App Store region.")
     case .identityMismatch:
-        return isChinese ? "App Store 返回的应用不符，请稍后重试。" : "The App Store returned a different app. Try again later."
+        return flashMaskText("native.update.failure.identityMismatch", language: effectiveLanguage, fallback: isChinese ? "App Store 返回的应用不符，请稍后重试。" : "The App Store returned a different app. Try again later.")
     case .invalidVersion:
-        return isChinese ? "无法读取版本号，请稍后重试。" : "Couldn’t read the version number. Try again later."
+        return flashMaskText("native.update.failure.invalidVersion", language: effectiveLanguage, fallback: isChinese ? "无法读取版本号，请稍后重试。" : "Couldn’t read the version number. Try again later.")
     case .timeout:
-        return isChinese ? "检查超时，请重试。" : "The check timed out. Try again."
+        return flashMaskText("native.update.failure.timeout", language: effectiveLanguage, fallback: isChinese ? "检查超时，请重试。" : "The check timed out. Try again.")
     case .rateLimited:
-        return isChinese ? "查询次数过多，请稍后重试。" : "Too many requests. Try again later."
+        return flashMaskText("native.update.failure.rateLimited", language: effectiveLanguage, fallback: isChinese ? "查询次数过多，请稍后重试。" : "Too many requests. Try again later.")
     case .network:
-        return isChinese ? "无法连接 App Store，请检查网络。" : "Couldn’t reach the App Store. Check your connection."
+        return flashMaskText("native.update.failure.network", language: effectiveLanguage, fallback: isChinese ? "无法连接 App Store，请检查网络。" : "Couldn’t reach the App Store. Check your connection.")
     case .invalidResponse:
-        return isChinese ? "无法读取 App Store 信息，请稍后重试。" : "Couldn’t read the App Store response. Try again later."
+        return flashMaskText("native.update.failure.invalidResponse", language: effectiveLanguage, fallback: isChinese ? "无法读取 App Store 信息，请稍后重试。" : "Couldn’t read the App Store response. Try again later.")
     }
 }
 
-func flashMaskCheckingAlert(isChinese: Bool) -> FlashMaskUpdateAlert {
-    FlashMaskUpdateAlert(
+func flashMaskCheckingAlert(isChinese: Bool, language: String? = nil) -> FlashMaskUpdateAlert {
+    let effectiveLanguage = language ?? (isChinese ? "zh" : "en")
+    return FlashMaskUpdateAlert(
         kind: .checking,
-        title: isChinese ? "正在检查…" : "Checking…",
+        title: flashMaskText("native.update.checking", language: effectiveLanguage, fallback: isChinese ? "正在检查…" : "Checking…"),
         body: "",
-        buttons: [isChinese ? "关闭" : "Close"]
+        buttons: [flashMaskText("native.button.close", language: effectiveLanguage, fallback: isChinese ? "关闭" : "Close")]
     )
 }
 
-func flashMaskUpdateAlert(outcome: FlashMaskUpdateOutcome, isChinese: Bool) -> FlashMaskUpdateAlert {
+func flashMaskUpdateAlert(outcome: FlashMaskUpdateOutcome, isChinese: Bool, language: String? = nil) -> FlashMaskUpdateAlert {
+    let effectiveLanguage = language ?? (isChinese ? "zh" : "en")
     switch outcome {
     case let .available(_, storeVersion, notes):
         return FlashMaskUpdateAlert(
             kind: .available,
-            title: isChinese ? "发现新版本 \(storeVersion)" : "Version \(storeVersion) available",
+            title: flashMaskText("native.update.available", language: effectiveLanguage, arguments: ["version": storeVersion], fallback: isChinese ? "发现新版本 \(storeVersion)" : "Version \(storeVersion) available"),
             body: notes ?? "",
             buttons: [
-                isChinese ? "前往 App Store" : "Go to the App Store",
-                isChinese ? "关闭" : "Close"
+                flashMaskText("native.update.goToStore", language: effectiveLanguage, fallback: isChinese ? "前往 App Store" : "Go to the App Store"),
+                flashMaskText("native.button.close", language: effectiveLanguage, fallback: isChinese ? "关闭" : "Close")
             ]
         )
     case .upToDate:
         return FlashMaskUpdateAlert(
             kind: .upToDate,
-            title: isChinese ? "已是最新版本" : "You’re up to date",
+            title: flashMaskText("native.update.latest", language: effectiveLanguage, fallback: isChinese ? "已是最新版本" : "You’re up to date"),
             body: "",
-            buttons: [isChinese ? "关闭" : "Close"]
+            buttons: [flashMaskText("native.button.close", language: effectiveLanguage, fallback: isChinese ? "关闭" : "Close")]
         )
     case let .incompatible(storeVersion, minimumOS):
         return FlashMaskUpdateAlert(
             kind: .incompatible,
-            title: isChinese ? "版本 \(storeVersion) 需要 macOS \(minimumOS) 或更高版本。" : "Version \(storeVersion) requires macOS \(minimumOS) or later.",
-            body: isChinese ? "请先更新 macOS，再检查 App 更新。" : "Update macOS, then check for app updates.",
-            buttons: [isChinese ? "关闭" : "Close"]
+            title: flashMaskText("native.update.incompatible", language: effectiveLanguage, arguments: ["version": storeVersion, "minimum_os": minimumOS], fallback: isChinese ? "版本 \(storeVersion) 需要 macOS \(minimumOS) 或更高版本。" : "Version \(storeVersion) requires macOS \(minimumOS) or later."),
+            body: flashMaskText("native.update.updateOS", language: effectiveLanguage, fallback: isChinese ? "请先更新 macOS，再检查 App 更新。" : "Update macOS, then check for app updates."),
+            buttons: [flashMaskText("native.button.close", language: effectiveLanguage, fallback: isChinese ? "关闭" : "Close")]
         )
     case let .failed(reason):
-        let retry = isChinese ? "重试" : "Retry"
-        let close = isChinese ? "关闭" : "Close"
+        let retry = flashMaskText("native.button.retry", language: effectiveLanguage, fallback: isChinese ? "重试" : "Retry")
+        let close = flashMaskText("native.button.close", language: effectiveLanguage, fallback: isChinese ? "关闭" : "Close")
         if reason == .storefrontUnknown {
             return FlashMaskUpdateAlert(
                 kind: .failed,
-                title: flashMaskUpdateFailureCopy(reason, isChinese: isChinese),
+                title: flashMaskUpdateFailureCopy(reason, isChinese: isChinese, language: effectiveLanguage),
                 body: "",
                 buttons: [
-                    isChinese ? "在 App Store 中查看" : "View in App Store",
+                    flashMaskText("native.update.viewInStore", language: effectiveLanguage, fallback: isChinese ? "在 App Store 中查看" : "View in App Store"),
                     retry,
                     close
                 ]
@@ -443,7 +448,7 @@ func flashMaskUpdateAlert(outcome: FlashMaskUpdateOutcome, isChinese: Bool) -> F
         }
         return FlashMaskUpdateAlert(
             kind: .failed,
-            title: flashMaskUpdateFailureCopy(reason, isChinese: isChinese),
+            title: flashMaskUpdateFailureCopy(reason, isChinese: isChinese, language: effectiveLanguage),
             body: "",
             buttons: [retry, close]
         )
@@ -460,20 +465,23 @@ struct FlashMaskSettingsUpdateViewModel: Equatable {
     var storeIsPrimary: Bool
 }
 
-func flashMaskSettingsCheckTitle(retry: Bool, isChinese: Bool) -> String {
-    if retry { return isChinese ? "重试" : "Try Again" }
-    return isChinese ? "检查更新…" : "Check for Updates…"
+func flashMaskSettingsCheckTitle(retry: Bool, isChinese: Bool, language: String? = nil) -> String {
+    let effectiveLanguage = language ?? (isChinese ? "zh" : "en")
+    if retry { return flashMaskText("native.settings.tryAgain", language: effectiveLanguage, fallback: isChinese ? "重试" : "Try Again") }
+    return flashMaskText("native.update.check", language: effectiveLanguage, fallback: isChinese ? "检查更新…" : "Check for Updates…")
 }
 
 func flashMaskSettingsUpdateViewModel(
     checking: Bool,
     outcome: FlashMaskUpdateOutcome?,
-    isChinese: Bool
+    isChinese: Bool,
+    language: String? = nil
 ) -> FlashMaskSettingsUpdateViewModel {
+    let effectiveLanguage = language ?? (isChinese ? "zh" : "en")
     if checking {
         return FlashMaskSettingsUpdateViewModel(
             kind: "checking",
-            checkTitle: isChinese ? "正在检查…" : "Checking…",
+            checkTitle: flashMaskText("native.update.checking", language: effectiveLanguage, fallback: isChinese ? "正在检查…" : "Checking…"),
             checkEnabled: false,
             resultTitle: nil,
             resultBody: nil,
@@ -484,7 +492,7 @@ func flashMaskSettingsUpdateViewModel(
     guard let outcome else {
         return FlashMaskSettingsUpdateViewModel(
             kind: "idle",
-            checkTitle: flashMaskSettingsCheckTitle(retry: false, isChinese: isChinese),
+            checkTitle: flashMaskSettingsCheckTitle(retry: false, isChinese: isChinese, language: effectiveLanguage),
             checkEnabled: true,
             resultTitle: nil,
             resultBody: nil,
@@ -496,19 +504,19 @@ func flashMaskSettingsUpdateViewModel(
     case let .available(_, storeVersion, notes):
         return FlashMaskSettingsUpdateViewModel(
             kind: "available",
-            checkTitle: flashMaskSettingsCheckTitle(retry: false, isChinese: isChinese),
+            checkTitle: flashMaskSettingsCheckTitle(retry: false, isChinese: isChinese, language: effectiveLanguage),
             checkEnabled: true,
-            resultTitle: isChinese ? "发现新版本 \(storeVersion)" : "Version \(storeVersion) available",
+            resultTitle: flashMaskText("native.update.available", language: effectiveLanguage, arguments: ["version": storeVersion], fallback: isChinese ? "发现新版本 \(storeVersion)" : "Version \(storeVersion) available"),
             resultBody: notes,
-            storeTitle: isChinese ? "前往 App Store" : "Go to the App Store",
+            storeTitle: flashMaskText("native.update.goToStore", language: effectiveLanguage, fallback: isChinese ? "前往 App Store" : "Go to the App Store"),
             storeIsPrimary: true
         )
     case .upToDate:
         return FlashMaskSettingsUpdateViewModel(
             kind: "latest",
-            checkTitle: flashMaskSettingsCheckTitle(retry: false, isChinese: isChinese),
+            checkTitle: flashMaskSettingsCheckTitle(retry: false, isChinese: isChinese, language: effectiveLanguage),
             checkEnabled: true,
-            resultTitle: isChinese ? "已是最新版本" : "You’re up to date",
+            resultTitle: flashMaskText("native.update.latest", language: effectiveLanguage, fallback: isChinese ? "已是最新版本" : "You’re up to date"),
             resultBody: nil,
             storeTitle: nil,
             storeIsPrimary: false
@@ -516,10 +524,10 @@ func flashMaskSettingsUpdateViewModel(
     case let .incompatible(storeVersion, minimumOS):
         return FlashMaskSettingsUpdateViewModel(
             kind: "incompatible",
-            checkTitle: flashMaskSettingsCheckTitle(retry: false, isChinese: isChinese),
+            checkTitle: flashMaskSettingsCheckTitle(retry: false, isChinese: isChinese, language: effectiveLanguage),
             checkEnabled: true,
-            resultTitle: isChinese ? "版本 \(storeVersion) 需要 macOS \(minimumOS) 或更高版本。" : "Version \(storeVersion) requires macOS \(minimumOS) or later.",
-            resultBody: isChinese ? "请先更新 macOS，再检查 App 更新。" : "Update macOS, then check for app updates.",
+            resultTitle: flashMaskText("native.update.incompatible", language: effectiveLanguage, arguments: ["version": storeVersion, "minimum_os": minimumOS], fallback: isChinese ? "版本 \(storeVersion) 需要 macOS \(minimumOS) 或更高版本。" : "Version \(storeVersion) requires macOS \(minimumOS) or later."),
+            resultBody: flashMaskText("native.update.updateOS", language: effectiveLanguage, fallback: isChinese ? "请先更新 macOS，再检查 App 更新。" : "Update macOS, then check for app updates."),
             storeTitle: nil,
             storeIsPrimary: false
         )
@@ -527,19 +535,19 @@ func flashMaskSettingsUpdateViewModel(
         if reason == .storefrontUnknown {
             return FlashMaskSettingsUpdateViewModel(
                 kind: "region",
-                checkTitle: flashMaskSettingsCheckTitle(retry: true, isChinese: isChinese),
+                checkTitle: flashMaskSettingsCheckTitle(retry: true, isChinese: isChinese, language: effectiveLanguage),
                 checkEnabled: true,
-                resultTitle: flashMaskUpdateFailureCopy(reason, isChinese: isChinese),
+                resultTitle: flashMaskUpdateFailureCopy(reason, isChinese: isChinese, language: effectiveLanguage),
                 resultBody: nil,
-                storeTitle: isChinese ? "在 App Store 中查看" : "View in App Store",
+                storeTitle: flashMaskText("native.update.viewInStore", language: effectiveLanguage, fallback: isChinese ? "在 App Store 中查看" : "View in App Store"),
                 storeIsPrimary: false
             )
         }
         return FlashMaskSettingsUpdateViewModel(
             kind: "failed",
-            checkTitle: flashMaskSettingsCheckTitle(retry: true, isChinese: isChinese),
+            checkTitle: flashMaskSettingsCheckTitle(retry: true, isChinese: isChinese, language: effectiveLanguage),
             checkEnabled: true,
-            resultTitle: flashMaskUpdateFailureCopy(reason, isChinese: isChinese),
+            resultTitle: flashMaskUpdateFailureCopy(reason, isChinese: isChinese, language: effectiveLanguage),
             resultBody: nil,
             storeTitle: nil,
             storeIsPrimary: false
@@ -674,10 +682,211 @@ func flashMaskNavigationPolicy(_ url: URL?, shouldPerformDownload: Bool) -> WKNa
 
 private let flashMaskLanguagePreferenceKey = "FlashMaskLanguage"
 
+struct FlashMaskLocalizationResource: Decodable, Equatable {
+    let schemaVersion: Int
+    let locale: String
+    let nativeName: String
+    let htmlLanguage: String
+    let bundleLocalization: String
+    let strings: [String: String]
+
+    private enum CodingKeys: String, CodingKey {
+        case schemaVersion = "schema_version"
+        case locale
+        case nativeName = "native_name"
+        case htmlLanguage = "html_lang"
+        case bundleLocalization = "bundle_localization"
+        case strings
+    }
+}
+
+private let flashMaskLocalizationMetadata: [String: (name: String, language: String, bundle: String)] = [
+    "en": ("English", "en", "en"),
+    "zh": ("简体中文", "zh-Hans", "zh-Hans"),
+    "ja": ("日本語", "ja", "ja"),
+    "de": ("Deutsch", "de", "de"),
+    "fr": ("Français", "fr", "fr"),
+    "es": ("Español", "es", "es"),
+    "zh-Hant": ("繁體中文", "zh-Hant", "zh-Hant")
+]
+private let flashMaskLocalizationTokens: [String: [String]] = [
+    "dynamic.regionCount.one": ["count"],
+    "dynamic.regionCount.other": ["count"],
+    "dynamic.regionLabel": ["id"],
+    "native.paste.chooseLocationBody": ["error"],
+    "native.update.available": ["version"],
+    "native.update.incompatible": ["minimum_os", "version"],
+    "native.version.withBuild": ["build", "version"],
+    "native.version.withoutBuild": ["version"]
+]
+private let flashMaskLocalizationHTMLKeys: Set<String> = ["editor.guideTitle", "editor.guideSubtitle"]
+private let flashMaskLocalizationTokenPattern = try! NSRegularExpression(pattern: #"\{([a-z_]+)\}"#)
+
+struct FlashMaskLocalizationCatalog {
+    let resources: [String: FlashMaskLocalizationResource]
+    let validationFailures: [String]
+
+    static let bundled = FlashMaskLocalizationCatalog(bundle: .main)
+
+    init(bundle: Bundle) {
+        self.init(
+            resourceDirectory: bundle.resourceURL?.appendingPathComponent("src/localizations", isDirectory: true),
+            bundleLocalizations: bundle.localizations
+        )
+    }
+
+    init(resourceDirectory: URL?, bundleLocalizations: [String]) {
+        var loaded: [String: FlashMaskLocalizationResource] = [:]
+        var failures: [String] = []
+        let rootKeys: Set<String> = ["schema_version", "locale", "native_name", "html_lang", "bundle_localization", "strings"]
+        if let directory = resourceDirectory, directory.isFileURL,
+           let files = try? FileManager.default.contentsOfDirectory(at: directory, includingPropertiesForKeys: nil) {
+            for file in files.filter({ $0.pathExtension == "json" }).sorted(by: { $0.lastPathComponent < $1.lastPathComponent }) {
+                do {
+                    let data = try Data(contentsOf: file)
+                    guard let object = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+                          Set(object.keys) == rootKeys else { throw FlashMaskLocalizationError.invalidResource }
+                    let resource = try JSONDecoder().decode(FlashMaskLocalizationResource.self, from: data)
+                    guard let metadata = flashMaskLocalizationMetadata[resource.locale],
+                          file.deletingPathExtension().lastPathComponent == resource.locale,
+                          resource.schemaVersion == 1, resource.nativeName == metadata.name,
+                          resource.htmlLanguage == metadata.language, resource.bundleLocalization == metadata.bundle,
+                          bundleLocalizations.contains(resource.bundleLocalization),
+                          Self.validStrings(resource.strings) else { throw FlashMaskLocalizationError.invalidResource }
+                    loaded[resource.locale] = resource
+                } catch {
+                    failures.append(file.lastPathComponent)
+                }
+            }
+        } else {
+            failures.append("src/localizations")
+        }
+        if let english = loaded["en"] {
+            let expectedKeys = Set(english.strings.keys)
+            for locale in Array(loaded.keys) where Set(loaded[locale]!.strings.keys) != expectedKeys {
+                loaded.removeValue(forKey: locale)
+                failures.append("\(locale).json")
+            }
+        } else {
+            // An absent canonical resource cannot establish a complete supported-language set.
+            loaded.removeAll()
+            if !failures.contains("en.json") { failures.append("en.json") }
+        }
+        resources = loaded
+        validationFailures = failures.sorted()
+    }
+
+    var supportedLocales: [String] {
+        ["zh", "en", "ja", "de", "fr", "es", "zh-Hant"].filter { resources[$0] != nil }
+    }
+
+    func pagePayload(language: String, preference: String) -> [String: Any]? {
+        guard resources["en"] != nil, resources[language] != nil else { return nil }
+        return [
+            "schema_version": 1,
+            "language": language,
+            "preference": preference,
+            "locales": supportedLocales.map { locale in
+                let resource = resources[locale]!
+                return ["locale": locale, "native_name": resource.nativeName, "html_lang": resource.htmlLanguage]
+            },
+            "strings": resources.mapValues(\.strings)
+        ]
+    }
+
+    func string(_ key: String, language: String, arguments: [String: String] = [:]) -> String? {
+        guard let template = resources[language]?.strings[key] ?? resources["en"]?.strings[key] else { return nil }
+        let matches = flashMaskLocalizationTokenPattern.matches(in: template, range: NSRange(template.startIndex..., in: template))
+        let source = template as NSString
+        let tokens = matches.map { source.substring(with: $0.range(at: 1)) }
+        guard Set(tokens) == Set(arguments.keys) else { return nil }
+        let formatted = NSMutableString(string: template)
+        for match in matches.reversed() {
+            let token = source.substring(with: match.range(at: 1))
+            formatted.replaceCharacters(in: match.range, with: arguments[token]!)
+        }
+        return formatted as String
+    }
+
+    private static func validStrings(_ strings: [String: String]) -> Bool {
+        let requiredKeys = Set(flashMaskLocalizationTokens.keys).union(flashMaskLocalizationHTMLKeys).union([
+            "editor.aria.areaTabs", "editor.aria.chooseLanguage", "native.language.system", "native.panel.open", "native.panel.save"
+        ])
+        guard strings.count == 132, requiredKeys.isSubset(of: Set(strings.keys)) else { return false }
+        for (key, value) in strings {
+            guard ["native.", "editor.", "dynamic."].contains(where: key.hasPrefix),
+                  !value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return false }
+            let matches = flashMaskLocalizationTokenPattern.matches(in: value, range: NSRange(value.startIndex..., in: value))
+            let source = value as NSString
+            let tokens = matches.map { source.substring(with: $0.range(at: 1)) }.sorted()
+            guard tokens == (flashMaskLocalizationTokens[key] ?? []).sorted() else { return false }
+            let withoutTokens = flashMaskLocalizationTokenPattern.stringByReplacingMatches(
+                in: value, range: NSRange(value.startIndex..., in: value), withTemplate: ""
+            )
+            guard !withoutTokens.contains("{"), !withoutTokens.contains("}") else { return false }
+            let plainText: String
+            if flashMaskLocalizationHTMLKeys.contains(key) {
+                guard value.components(separatedBy: "<br>").count == 2 else { return false }
+                plainText = value.replacingOccurrences(of: "<br>", with: "")
+            } else {
+                plainText = value
+            }
+            guard !plainText.contains("<"), !plainText.contains(">") else { return false }
+        }
+        return true
+    }
+}
+
+private enum FlashMaskLocalizationError: Error { case invalidResource }
+
+func flashMaskText(
+    _ key: String,
+    language: String,
+    arguments: [String: String] = [:],
+    fallback: String
+) -> String {
+    FlashMaskLocalizationCatalog.bundled.string(key, language: language, arguments: arguments) ?? fallback
+}
+
+func flashMaskCanonicalLanguage(_ language: String) -> String? {
+    let components = language.replacingOccurrences(of: "_", with: "-").lowercased().split(separator: "-")
+    guard let base = components.first else { return nil }
+    if base == "zh" {
+        if let script = components.dropFirst().first(where: { $0 == "hans" || $0 == "hant" }) {
+            return script == "hant" ? "zh-Hant" : "zh"
+        }
+        return components.dropFirst().contains(where: { ["tw", "hk", "mo"].contains(String($0)) }) ? "zh-Hant" : "zh"
+    }
+    return ["en", "ja", "de", "fr", "es"].contains(String(base)) ? String(base) : nil
+}
+
+func flashMaskMatchingInterfaceLanguage(_ requested: [String], supportedLocales: [String]) -> String {
+    let supported = Set(supportedLocales)
+    for item in requested {
+        if let locale = flashMaskCanonicalLanguage(item), supported.contains(locale) { return locale }
+    }
+    return "en"
+}
+
+func flashMaskNormalizedLanguagePreference(_ preference: String, supportedLocales: [String]) -> String {
+    if ["system", "zh", "en"].contains(preference) { return preference }
+    return supportedLocales.contains(preference) ? preference : "system"
+}
+
+func flashMaskResolvedInterfaceLanguage(
+    preference: String,
+    preferredLanguages: [String] = Locale.preferredLanguages,
+    supportedLocales: [String] = FlashMaskLocalizationCatalog.bundled.supportedLocales
+) -> String {
+    let normalized = flashMaskNormalizedLanguagePreference(preference, supportedLocales: supportedLocales)
+    if normalized != "system", supportedLocales.contains(normalized) { return normalized }
+    return flashMaskMatchingInterfaceLanguage(preferredLanguages, supportedLocales: supportedLocales)
+}
+
 private func resolvedFlashMaskLanguage() -> String {
     let preference = UserDefaults.standard.string(forKey: flashMaskLanguagePreferenceKey) ?? "system"
-    if preference == "zh" || preference == "en" { return preference }
-    return Locale.preferredLanguages.first?.lowercased().hasPrefix("zh") == true ? "zh" : "en"
+    let installed = FlashMaskLocalizationCatalog.bundled.supportedLocales
+    return flashMaskResolvedInterfaceLanguage(preference: preference, supportedLocales: installed.isEmpty ? ["zh", "en"] : installed)
 }
 
 func flashMaskSystemPreferredLanguages(defaults: UserDefaults = .standard) -> [String] {
@@ -689,19 +898,16 @@ func flashMaskSystemPreferredLanguages(defaults: UserDefaults = .standard) -> [S
 }
 
 func flashMaskMatchingPanelLanguage(_ requested: [String], bundleLocalizations: [String]) -> String {
-    let available = Set(bundleLocalizations.map { $0.lowercased() })
-    let hasChinese = available.contains { $0 == "zh-hans" || $0 == "zh" || $0.hasPrefix("zh-hans") }
-    let hasEnglish = available.contains { $0 == "en" || $0 == "base" || $0.hasPrefix("en") }
-    for item in requested {
-        let lower = item.lowercased()
-        if lower.hasPrefix("zh"), hasChinese { return "zh" }
-        if lower.hasPrefix("en"), hasEnglish { return "en" }
-    }
-    return hasEnglish || !hasChinese ? "en" : "zh"
+    let supported = bundleLocalizations.compactMap { $0.lowercased() == "base" ? "en" : flashMaskCanonicalLanguage($0) }
+    return flashMaskMatchingInterfaceLanguage(requested, supportedLocales: supported)
 }
 
 func flashMaskBundlePanelLanguage(_ bundle: Bundle = .main) -> String {
-    flashMaskMatchingPanelLanguage(bundle.preferredLocalizations, bundleLocalizations: bundle.localizations)
+    let catalog = bundle.bundleURL == Bundle.main.bundleURL ? FlashMaskLocalizationCatalog.bundled : FlashMaskLocalizationCatalog(bundle: bundle)
+    return flashMaskMatchingPanelLanguage(
+        bundle.preferredLocalizations,
+        bundleLocalizations: catalog.resources.values.map(\.bundleLocalization)
+    )
 }
 
 func flashMaskSystemPanelLanguage(
@@ -713,13 +919,19 @@ func flashMaskSystemPanelLanguage(
 
 func flashMaskPersistLanguagePreference(
     _ preference: String,
-    defaults: UserDefaults = .standard
+    defaults: UserDefaults = .standard,
+    supportedLocales: [String] = FlashMaskLocalizationCatalog.bundled.supportedLocales
 ) {
-    let supported = ["system", "zh", "en"].contains(preference) ? preference : "system"
+    let supported = flashMaskNormalizedLanguagePreference(preference, supportedLocales: supportedLocales)
     defaults.set(supported, forKey: flashMaskLanguagePreferenceKey)
 }
 
-func flashMaskOwnedFilePanelPrompt(isOpen: Bool, language: String) -> String {
+func flashMaskOwnedFilePanelPrompt(
+    isOpen: Bool,
+    language: String,
+    catalog: FlashMaskLocalizationCatalog = .bundled
+) -> String {
+    if let value = catalog.string(isOpen ? "native.panel.open" : "native.panel.save", language: language) { return value }
     if isOpen { return language == "zh" ? "打开" : "Open" }
     return language == "zh" ? "保存" : "Save"
 }
@@ -1327,6 +1539,8 @@ final class FlashMaskController: NSObject, WKNavigationDelegate, WKScriptMessage
     var pasteNoticeHandler: ((String, String) -> Void)?
     var openURLHandler: ((URL) -> Bool)?
     var screenshotDirectoryOverride: URL?
+    var clipboardWriterOverride: ((String) -> Bool)?
+    private(set) var languageMenu: NSMenu?
 
     private let pageURL: URL
     private let imageSchemeHandler = LocalImageSchemeHandler()
@@ -1344,8 +1558,12 @@ final class FlashMaskController: NSObject, WKNavigationDelegate, WKScriptMessage
         self.pageURL = pageURL
         let contentController = WKUserContentController()
         let initialLanguage = resolvedFlashMaskLanguage()
+        let preference = UserDefaults.standard.string(forKey: flashMaskLanguagePreferenceKey) ?? "system"
+        let payload = FlashMaskLocalizationCatalog.bundled.pagePayload(language: initialLanguage, preference: preference)
+        let payloadData = payload.flatMap { try? JSONSerialization.data(withJSONObject: $0, options: [.sortedKeys]) }
+        let payloadJSON = payloadData.flatMap { String(data: $0, encoding: .utf8) } ?? "null"
         contentController.addUserScript(WKUserScript(
-            source: "window.__flashMaskInitialLanguage = '\(initialLanguage)';",
+            source: "window.__flashMaskInitialLanguage = '\(initialLanguage)'; window.__flashMaskLocalization = \(payloadJSON);",
             injectionTime: .atDocumentStart,
             forMainFrameOnly: true
         ))
@@ -1435,8 +1653,8 @@ final class FlashMaskController: NSObject, WKNavigationDelegate, WKScriptMessage
         case .multipleImages:
             _ = invalidateInFlightPaste()
             presentPasteNotice(
-                title: resolvedFlashMaskLanguage() == "zh" ? "一次只支持一张图片" : "Paste one image at a time",
-                body: resolvedFlashMaskLanguage() == "zh" ? "当前圈选和说明已保留。" : "Your current outlines and notes are unchanged."
+                title: flashMaskText("native.paste.multipleImages", language: resolvedFlashMaskLanguage(), fallback: resolvedFlashMaskLanguage() == "zh" ? "一次只支持一张图片" : "Paste one image at a time"),
+                body: flashMaskText("native.paste.workPreserved", language: resolvedFlashMaskLanguage(), fallback: resolvedFlashMaskLanguage() == "zh" ? "当前圈选和说明已保留。" : "Your current outlines and notes are unchanged.")
             )
         case .file(let url):
             let generation = invalidateInFlightPaste()
@@ -1446,8 +1664,8 @@ final class FlashMaskController: NSObject, WKNavigationDelegate, WKScriptMessage
                 guard flashMaskFileIsReadable(url), flashMaskDecodePNGFile(url) != nil else {
                     access.release()
                     self.presentPasteNotice(
-                        title: resolvedFlashMaskLanguage() == "zh" ? "图片无法解码" : "We couldn’t open this image",
-                        body: resolvedFlashMaskLanguage() == "zh" ? "当前圈选和说明已保留。" : "Your current outlines and notes are unchanged."
+                        title: flashMaskText("native.paste.decodeFailed", language: resolvedFlashMaskLanguage(), fallback: resolvedFlashMaskLanguage() == "zh" ? "图片无法解码" : "We couldn’t open this image"),
+                        body: flashMaskText("native.paste.workPreserved", language: resolvedFlashMaskLanguage(), fallback: resolvedFlashMaskLanguage() == "zh" ? "当前圈选和说明已保留。" : "Your current outlines and notes are unchanged.")
                     )
                     return
                 }
@@ -1468,8 +1686,8 @@ final class FlashMaskController: NSObject, WKNavigationDelegate, WKScriptMessage
         let directory = screenshotDirectoryOverride ?? flashMaskScreenshotDirectoryURL()
         guard let directory else {
             presentPasteNotice(
-                title: resolvedFlashMaskLanguage() == "zh" ? "无法打开保存文件夹" : "Couldn’t open the saved-images folder",
-                body: resolvedFlashMaskLanguage() == "zh" ? "系统下载目录不可用。" : "The Downloads folder is unavailable."
+                title: flashMaskText("native.folder.openFailed", language: resolvedFlashMaskLanguage(), fallback: resolvedFlashMaskLanguage() == "zh" ? "无法打开保存文件夹" : "Couldn’t open the saved-images folder"),
+                body: flashMaskText("native.folder.downloadsUnavailable", language: resolvedFlashMaskLanguage(), fallback: resolvedFlashMaskLanguage() == "zh" ? "系统下载目录不可用。" : "The Downloads folder is unavailable.")
             )
             return
         }
@@ -1477,14 +1695,14 @@ final class FlashMaskController: NSObject, WKNavigationDelegate, WKScriptMessage
             try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
             guard NSWorkspace.shared.open(directory) else {
                 presentPasteNotice(
-                    title: resolvedFlashMaskLanguage() == "zh" ? "无法打开保存文件夹" : "Couldn’t open the saved-images folder",
-                    body: resolvedFlashMaskLanguage() == "zh" ? "系统未能打开该文件夹。" : "The folder could not be opened."
+                    title: flashMaskText("native.folder.openFailed", language: resolvedFlashMaskLanguage(), fallback: resolvedFlashMaskLanguage() == "zh" ? "无法打开保存文件夹" : "Couldn’t open the saved-images folder"),
+                    body: flashMaskText("native.folder.couldNotOpen", language: resolvedFlashMaskLanguage(), fallback: resolvedFlashMaskLanguage() == "zh" ? "系统未能打开该文件夹。" : "The folder could not be opened.")
                 )
                 return
             }
         } catch {
             presentPasteNotice(
-                title: resolvedFlashMaskLanguage() == "zh" ? "无法打开保存文件夹" : "Couldn’t open the saved-images folder",
+                title: flashMaskText("native.folder.openFailed", language: resolvedFlashMaskLanguage(), fallback: resolvedFlashMaskLanguage() == "zh" ? "无法打开保存文件夹" : "Couldn’t open the saved-images folder"),
                 body: error.localizedDescription
             )
         }
@@ -1507,23 +1725,56 @@ final class FlashMaskController: NSObject, WKNavigationDelegate, WKScriptMessage
     }
 
     func setLanguagePreference(_ preference: String, persist: Bool = true, completion: (() -> Void)? = nil) {
-        let supportedPreference = ["system", "zh", "en"].contains(preference) ? preference : "system"
-        if persist { flashMaskPersistLanguagePreference(supportedPreference) }
-        let language: String
-        if supportedPreference == "system" {
-            language = Locale.preferredLanguages.first?.lowercased().hasPrefix("zh") == true ? "zh" : "en"
-        } else {
-            language = supportedPreference
+        let installed = FlashMaskLocalizationCatalog.bundled.supportedLocales
+        let supported = installed.isEmpty ? ["zh", "en"] : installed
+        let supportedPreference = flashMaskNormalizedLanguagePreference(preference, supportedLocales: supported)
+        if persist { flashMaskPersistLanguagePreference(supportedPreference, supportedLocales: supported) }
+        let language = flashMaskResolvedInterfaceLanguage(preference: supportedPreference, supportedLocales: supported)
+        callJavaScript("window.FlashMaskP0.setLanguagePreferenceFromNative", object: [
+            "language": language, "preference": supportedPreference
+        ]) { _ in completion?() }
+    }
+
+    func makeLanguageMenu() -> NSMenu {
+        let catalog = FlashMaskLocalizationCatalog.bundled
+        let language = resolvedFlashMaskLanguage()
+        let preference = flashMaskNormalizedLanguagePreference(
+            UserDefaults.standard.string(forKey: flashMaskLanguagePreferenceKey) ?? "system",
+            supportedLocales: catalog.supportedLocales
+        )
+        let menu = NSMenu()
+        menu.autoenablesItems = false
+        let systemTitle = flashMaskText("native.language.system", language: language,
+                                       fallback: language.hasPrefix("zh") ? "跟随系统" : "Use System Language")
+        let choices = [("system", systemTitle)] + catalog.supportedLocales.map { ($0, catalog.resources[$0]!.nativeName) }
+        for (value, title) in choices {
+            let item = NSMenuItem(title: title, action: #selector(selectInterfaceLanguage(_:)), keyEquivalent: "")
+            item.target = self
+            item.representedObject = value
+            item.state = value == preference ? .on : .off
+            menu.addItem(item)
         }
-        let finish = {
-            completion?()
+        return menu
+    }
+
+    private func showLanguageMenu(anchor: [String: Any]) {
+        guard !FlashMaskLocalizationCatalog.bundled.supportedLocales.isEmpty,
+              let x = anchor["x"] as? Double, let y = anchor["y"] as? Double,
+              x.isFinite, y.isFinite, webView.window != nil else { return }
+        let menu = makeLanguageMenu()
+        languageMenu = menu
+        let point = NSPoint(x: min(max(0, x), webView.bounds.width),
+                            y: webView.isFlipped ? y : webView.bounds.height - y)
+        menu.popUp(positioning: nil, at: point, in: webView)
+        languageMenu = nil
+        webView.evaluateJavaScript("window.FlashMaskP0.closeLanguageMenu()")
+    }
+
+    @objc private func selectInterfaceLanguage(_ sender: NSMenuItem) {
+        guard let preference = sender.representedObject as? String else { return }
+        setLanguagePreference(preference) { [weak self] in
+            self?.onLanguagePreferenceChange?()
         }
-        guard let data = try? JSONSerialization.data(withJSONObject: language, options: .fragmentsAllowed),
-              let json = String(data: data, encoding: .utf8) else {
-            finish()
-            return
-        }
-        webView.evaluateJavaScript("window.FlashMaskP0.setLanguage(\(json))") { _, _ in finish() }
     }
 
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
@@ -1673,7 +1924,7 @@ final class FlashMaskController: NSObject, WKNavigationDelegate, WKScriptMessage
         let chinese = resolvedFlashMaskLanguage() == "zh"
         let alert = NSAlert()
         alert.alertStyle = .warning
-        alert.messageText = chinese ? "蒙版保存失败" : "Couldn’t save the mask"
+        alert.messageText = flashMaskText("native.save.maskFailed", language: resolvedFlashMaskLanguage(), fallback: chinese ? "蒙版保存失败" : "Couldn’t save the mask")
         alert.informativeText = error.localizedDescription
         alert.runModal()
     }
@@ -1719,7 +1970,7 @@ final class FlashMaskController: NSObject, WKNavigationDelegate, WKScriptMessage
         }
         for nonce in Array(imports.keys) { releaseImport(nonce) }
         showingFailurePage = true
-        let message = resolvedFlashMaskLanguage() == "zh" ? "Flash Mask 页面加载失败，请重新打开应用。" : "Flash Mask failed to load. Please reopen the app."
+        let message = flashMaskText("native.page.loadFailed", language: resolvedFlashMaskLanguage(), fallback: resolvedFlashMaskLanguage() == "zh" ? "Flash Mask 页面加载失败，请重新打开应用。" : "Flash Mask failed to load. Please reopen the app.")
         let escaped = message.replacingOccurrences(of: "&", with: "&amp;").replacingOccurrences(of: "<", with: "&lt;").replacingOccurrences(of: ">", with: "&gt;")
         webView.loadHTMLString("<meta name='color-scheme' content='dark'><body style='margin:0;padding:32px;color:#fff;background:#080c0f;font:16px system-ui'>\(escaped)</body>", baseURL: nil)
     }
@@ -1748,17 +1999,27 @@ final class FlashMaskController: NSObject, WKNavigationDelegate, WKScriptMessage
         case "copy-json":
             guard let copyNonce = body["copy_nonce"] as? String,
                   let text = body["text"] as? String else { return }
-            let pasteboard = NSPasteboard.general
-            pasteboard.clearContents()
+            let copied: Bool
+            if let writer = clipboardWriterOverride {
+                copied = writer(text)
+            } else {
+                let pasteboard = NSPasteboard.general
+                pasteboard.clearContents()
+                copied = pasteboard.setString(text, forType: .string)
+            }
             callJavaScript("window.FlashMaskP0.acceptNativeCopy", object: [
                 "copy_nonce": copyNonce,
-                "ok": pasteboard.setString(text, forType: .string)
+                "ok": copied
             ])
         case "language-preference":
-            guard let language = body["language"] as? String, ["zh", "en"].contains(language) else { return }
+            guard let language = body["language"] as? String,
+                  (["system"] + FlashMaskLocalizationCatalog.bundled.supportedLocales + ["zh", "en"]).contains(language) else { return }
             setLanguagePreference(language) { [weak self] in
                 self?.onLanguagePreferenceChange?()
             }
+        case "choose-language":
+            guard let anchor = body["anchor"] as? [String: Any] else { return }
+            showLanguageMenu(anchor: anchor)
         case "open-external":
             guard let destination = body["destination"] as? String else { return }
             openExternalDestination(destination)
@@ -1876,10 +2137,10 @@ final class FlashMaskController: NSObject, WKNavigationDelegate, WKScriptMessage
         let chinese = resolvedFlashMaskLanguage() == "zh"
         let alert = NSAlert()
         alert.alertStyle = .warning
-        alert.messageText = chinese ? "更换图片将清除当前圈选和说明" : "Replacing the image clears the current selections and notes"
-        alert.informativeText = chinese ? "只有新图片准备成功后，才会清除当前内容。取消可继续编辑。" : "Your current work is kept until the new image is ready. Cancel to keep editing."
-        alert.addButton(withTitle: chinese ? "取消" : "Cancel")
-        alert.addButton(withTitle: chinese ? "更换图片" : "Replace Image")
+        alert.messageText = flashMaskText("native.replace.title", language: resolvedFlashMaskLanguage(), fallback: chinese ? "更换图片将清除当前圈选和说明" : "Replacing the image clears the current selections and notes")
+        alert.informativeText = flashMaskText("native.replace.body", language: resolvedFlashMaskLanguage(), fallback: chinese ? "只有新图片准备成功后，才会清除当前内容。取消可继续编辑。" : "Your current work is kept until the new image is ready. Cancel to keep editing.")
+        alert.addButton(withTitle: flashMaskText("native.button.cancel", language: resolvedFlashMaskLanguage(), fallback: chinese ? "取消" : "Cancel"))
+        alert.addButton(withTitle: flashMaskText("native.replace.confirm", language: resolvedFlashMaskLanguage(), fallback: chinese ? "更换图片" : "Replace Image"))
         return alert.runModal() == .alertSecondButtonReturn
     }
 
@@ -1892,10 +2153,10 @@ final class FlashMaskController: NSObject, WKNavigationDelegate, WKScriptMessage
         if !opened {
             let chinese = resolvedFlashMaskLanguage() == "zh"
             presentPasteNotice(
-                title: chinese ? "无法打开链接" : "Couldn’t open the link",
-                body: chinese
+                title: flashMaskText("native.link.openFailed", language: resolvedFlashMaskLanguage(), fallback: chinese ? "无法打开链接" : "Couldn’t open the link"),
+                body: flashMaskText("native.link.workPreserved", language: resolvedFlashMaskLanguage(), fallback: chinese
                     ? "系统未能打开该页面。当前图片、圈选和说明已保留。"
-                    : "The page could not be opened. Your image, outlines and notes are unchanged."
+                    : "The page could not be opened. Your image, outlines and notes are unchanged.")
             )
         }
         return opened
@@ -1910,7 +2171,7 @@ final class FlashMaskController: NSObject, WKNavigationDelegate, WKScriptMessage
         alert.alertStyle = .informational
         alert.messageText = title
         alert.informativeText = body
-        alert.addButton(withTitle: resolvedFlashMaskLanguage() == "zh" ? "好" : "OK")
+        alert.addButton(withTitle: flashMaskText("native.button.ok", language: resolvedFlashMaskLanguage(), fallback: resolvedFlashMaskLanguage() == "zh" ? "好" : "OK"))
         alert.runModal()
     }
 
@@ -1932,8 +2193,8 @@ final class FlashMaskController: NSObject, WKNavigationDelegate, WKScriptMessage
                 guard let self, self.pasteGeneration == generation else { return }
                 guard let decoded else {
                     self.presentPasteNotice(
-                        title: resolvedFlashMaskLanguage() == "zh" ? "图片无法解码" : "We couldn’t open this image",
-                        body: resolvedFlashMaskLanguage() == "zh" ? "当前圈选和说明已保留。" : "Your current outlines and notes are unchanged."
+                        title: flashMaskText("native.paste.decodeFailed", language: resolvedFlashMaskLanguage(), fallback: resolvedFlashMaskLanguage() == "zh" ? "图片无法解码" : "We couldn’t open this image"),
+                        body: flashMaskText("native.paste.workPreserved", language: resolvedFlashMaskLanguage(), fallback: resolvedFlashMaskLanguage() == "zh" ? "当前圈选和说明已保留。" : "Your current outlines and notes are unchanged.")
                     )
                     return
                 }
@@ -1949,7 +2210,7 @@ final class FlashMaskController: NSObject, WKNavigationDelegate, WKScriptMessage
     private func saveDecodedPaste(_ decoded: FlashMaskDecodedRaster, generation: UInt64) {
         let directory = screenshotDirectoryOverride ?? flashMaskScreenshotDirectoryURL()
         guard let directory else {
-            offerAlternatePasteSave(decoded, generation: generation, errorText: resolvedFlashMaskLanguage() == "zh" ? "系统下载目录不可用。" : "The Downloads folder is unavailable.")
+            offerAlternatePasteSave(decoded, generation: generation, errorText: flashMaskText("native.folder.downloadsUnavailable", language: resolvedFlashMaskLanguage(), fallback: resolvedFlashMaskLanguage() == "zh" ? "系统下载目录不可用。" : "The Downloads folder is unavailable."))
             return
         }
         do {
@@ -1975,12 +2236,12 @@ final class FlashMaskController: NSObject, WKNavigationDelegate, WKScriptMessage
         }
         let alert = NSAlert()
         alert.alertStyle = .warning
-        alert.messageText = chinese ? "截图未能保存" : "Screenshot could not be saved"
-        alert.informativeText = chinese
+        alert.messageText = flashMaskText("native.paste.saveFailed", language: resolvedFlashMaskLanguage(), fallback: chinese ? "截图未能保存" : "Screenshot could not be saved")
+        alert.informativeText = flashMaskText("native.paste.chooseLocationBody", language: resolvedFlashMaskLanguage(), arguments: ["error": errorText], fallback: chinese
             ? "无法写入下载 / Flash Mask。当前图片、圈选和说明已保留。可以仅为这一次另选位置。\n\(errorText)"
-            : "Could not write to Downloads / Flash Mask. Your image, outlines and notes are unchanged. Choose another location for this save only.\n\(errorText)"
-        alert.addButton(withTitle: chinese ? "取消" : "Cancel")
-        alert.addButton(withTitle: chinese ? "另选位置" : "Choose Location")
+            : "Could not write to Downloads / Flash Mask. Your image, outlines and notes are unchanged. Choose another location for this save only.\n\(errorText)")
+        alert.addButton(withTitle: flashMaskText("native.button.cancel", language: resolvedFlashMaskLanguage(), fallback: chinese ? "取消" : "Cancel"))
+        alert.addButton(withTitle: flashMaskText("native.paste.chooseLocation", language: resolvedFlashMaskLanguage(), fallback: chinese ? "另选位置" : "Choose Location"))
         guard alert.runModal() == .alertSecondButtonReturn, pasteGeneration == generation else { return }
         let panel = NSSavePanel()
         panel.allowedContentTypes = [.png]
@@ -2020,7 +2281,7 @@ final class FlashMaskController: NSObject, WKNavigationDelegate, WKScriptMessage
         } catch {
             access.release()
             presentPasteNotice(
-                title: resolvedFlashMaskLanguage() == "zh" ? "截图未能保存" : "Screenshot could not be saved",
+                title: flashMaskText("native.paste.saveFailed", language: resolvedFlashMaskLanguage(), fallback: resolvedFlashMaskLanguage() == "zh" ? "截图未能保存" : "Screenshot could not be saved"),
                 body: error.localizedDescription
             )
         }
@@ -2077,6 +2338,8 @@ final class FlashMaskSettingsButton: NSButton {
         bezelStyle = .flexiblePush
         focusRingType = .exterior
         font = .systemFont(ofSize: 12, weight: .medium)
+        cell?.wraps = true
+        cell?.lineBreakMode = .byWordWrapping
         wantsLayer = true
         layer?.cornerRadius = 7
         layer?.borderWidth = 1
@@ -2085,12 +2348,25 @@ final class FlashMaskSettingsButton: NSButton {
     @available(*, unavailable)
     required init?(coder: NSCoder) { nil }
 
+    func height(forWidth width: CGFloat) -> CGFloat {
+        let bounds = (title as NSString).boundingRect(
+            with: NSSize(width: max(1, width - 24), height: .greatestFiniteMagnitude),
+            options: [.usesLineFragmentOrigin, .usesFontLeading],
+            attributes: [.font: font ?? NSFont.systemFont(ofSize: 12, weight: .medium)]
+        )
+        return max(30, ceil(bounds.height) + 12)
+    }
+
     override func draw(_ dirtyRect: NSRect) {
         layer?.backgroundColor = (fillsYellow ? FlashMaskSettingsChrome.yellow : FlashMaskSettingsChrome.buttonFill).cgColor
         layer?.borderColor = (fillsYellow ? FlashMaskSettingsChrome.yellow : FlashMaskSettingsChrome.buttonStroke).cgColor
+        let paragraph = NSMutableParagraphStyle()
+        paragraph.alignment = .center
+        paragraph.lineBreakMode = .byWordWrapping
         attributedTitle = NSAttributedString(string: title, attributes: [
             .font: font ?? .systemFont(ofSize: 12, weight: .medium),
-            .foregroundColor: fillsYellow ? FlashMaskSettingsChrome.ink : FlashMaskSettingsChrome.text
+            .foregroundColor: fillsYellow ? FlashMaskSettingsChrome.ink : FlashMaskSettingsChrome.text,
+            .paragraphStyle: paragraph
         ])
         super.draw(dirtyRect)
     }
@@ -2101,7 +2377,7 @@ final class FlashMaskSettingsPanel: NSView {
     let nameLabel = NSTextField(labelWithString: "Flash Mask")
     let versionLabel = NSTextField(labelWithString: "")
     let checkButton = FlashMaskSettingsButton(frame: .zero)
-    let resultTitle = NSTextField(labelWithString: "")
+    let resultTitle = NSTextField(wrappingLabelWithString: "")
     let resultBody = NSTextField(wrappingLabelWithString: "")
     let notesScroll = NSScrollView()
     let storeButton = FlashMaskSettingsButton(frame: .zero)
@@ -2111,12 +2387,14 @@ final class FlashMaskSettingsPanel: NSView {
     let feedbackButton = FlashMaskSettingsButton(frame: .zero)
     let websiteButton = NSButton(title: "", target: nil, action: nil)
     let sourceButton = NSButton(title: "", target: nil, action: nil)
-    let linkErrorLabel = NSTextField(labelWithString: "")
-    let storeErrorLabel = NSTextField(labelWithString: "")
+    let linkErrorLabel = NSTextField(wrappingLabelWithString: "")
+    let storeErrorLabel = NSTextField(wrappingLabelWithString: "")
     private let topLine = NSBox()
     private let bottomLine = NSBox()
     private(set) var model = flashMaskSettingsUpdateViewModel(checking: false, outcome: nil, isChinese: true)
     private(set) var isChinese = true
+    private(set) var language = "zh"
+    private var languagePreferenceValues = ["system", "zh", "en"]
     var onCheck: (() -> Void)?
     var onLanguage: ((String) -> Void)?
     var onHelp: (() -> Void)?
@@ -2176,16 +2454,17 @@ final class FlashMaskSettingsPanel: NSView {
     @available(*, unavailable)
     required init?(coder: NSCoder) { nil }
 
-    func apply(_ model: FlashMaskSettingsUpdateViewModel, isChinese: Bool, versionLine: String) {
+    func apply(_ model: FlashMaskSettingsUpdateViewModel, isChinese: Bool, versionLine: String, language: String? = nil) {
         self.model = model
         self.isChinese = isChinese
+        self.language = language ?? (isChinese ? "zh" : "en")
         versionLabel.stringValue = versionLine
-        languageLabel.stringValue = isChinese ? "界面语言" : "Interface language"
+        languageLabel.stringValue = flashMaskText("native.settings.interfaceLanguage", language: self.language, fallback: isChinese ? "界面语言" : "Interface language")
         rebuildLanguageItems()
-        helpButton.title = isChinese ? "使用帮助" : "User Guide"
-        feedbackButton.title = isChinese ? "反馈问题" : "Report an Issue"
-        websiteButton.title = isChinese ? "官网 ↗" : "Website ↗"
-        sourceButton.title = isChinese ? "源代码 · GitHub ↗" : "Source code · GitHub ↗"
+        helpButton.title = flashMaskText("native.help.userGuide", language: self.language, fallback: isChinese ? "使用帮助" : "User Guide")
+        feedbackButton.title = flashMaskText("native.help.feedback", language: self.language, fallback: isChinese ? "反馈问题" : "Report an Issue")
+        websiteButton.title = flashMaskText("native.settings.website", language: self.language, fallback: isChinese ? "官网 ↗" : "Website ↗")
+        sourceButton.title = flashMaskText("native.settings.source", language: self.language, fallback: isChinese ? "源代码 · GitHub ↗" : "Source code · GitHub ↗")
         checkButton.title = model.checkTitle
         checkButton.isEnabled = model.checkEnabled
         resultTitle.stringValue = model.resultTitle ?? ""
@@ -2203,13 +2482,13 @@ final class FlashMaskSettingsPanel: NSView {
     }
 
     func showLinkOpenFailed() {
-        linkErrorLabel.stringValue = isChinese ? "未能打开页面，请重试。" : "Couldn’t open the page. Try again."
+        linkErrorLabel.stringValue = flashMaskText("native.settings.linkOpenFailed", language: self.language, fallback: isChinese ? "未能打开页面，请重试。" : "Couldn’t open the page. Try again.")
         linkErrorLabel.isHidden = false
         needsLayout = true
     }
 
     func showStoreOpenFailed() {
-        storeErrorLabel.stringValue = isChinese ? "未能打开 App Store，请重试。" : "Couldn’t open the App Store. Try again."
+        storeErrorLabel.stringValue = flashMaskText("native.settings.storeOpenFailed", language: self.language, fallback: isChinese ? "未能打开 App Store，请重试。" : "Couldn’t open the App Store. Try again.")
         storeErrorLabel.isHidden = false
         needsLayout = true
     }
@@ -2260,8 +2539,9 @@ final class FlashMaskSettingsPanel: NSView {
         iconView.frame = NSRect(x: side, y: y + 4, width: 32, height: 28)
         nameLabel.frame = NSRect(x: side + 44, y: y, width: 260, height: 22)
         versionLabel.frame = NSRect(x: side + 44, y: y + 22, width: 260, height: 16)
-        checkButton.frame = NSRect(x: bounds.width - side - 186, y: y + 5, width: 186, height: 30)
-        y += 44
+        let checkHeight = checkButton.height(forWidth: 186)
+        checkButton.frame = NSRect(x: bounds.width - side - 186, y: y + 5, width: 186, height: checkHeight)
+        y += max(44, checkHeight + 10)
         if !resultTitle.isHidden {
             y += 12
             let titleWidth = storeButton.isHidden ? width : width - 198
@@ -2269,9 +2549,9 @@ final class FlashMaskSettingsPanel: NSView {
             let titleHeight = max(16, resultTitle.intrinsicContentSize.height)
             resultTitle.frame = NSRect(x: side, y: y, width: titleWidth, height: titleHeight)
             if !storeButton.isHidden {
-                storeButton.frame = NSRect(x: bounds.width - side - 186, y: y - 2, width: 186, height: 30)
+                storeButton.frame = NSRect(x: bounds.width - side - 186, y: y - 2, width: 186, height: storeButton.height(forWidth: 186))
             }
-            y += max(titleHeight, storeButton.isHidden ? 0 : 30)
+            y += max(titleHeight, storeButton.isHidden ? 0 : storeButton.frame.height)
         }
         if !notesScroll.isHidden {
             y += 8
@@ -2285,20 +2565,25 @@ final class FlashMaskSettingsPanel: NSView {
         }
         if !storeErrorLabel.isHidden {
             y += 8
-            storeErrorLabel.frame = NSRect(x: side, y: y, width: width, height: 16)
-            y += 16
+            storeErrorLabel.preferredMaxLayoutWidth = width
+            let errorHeight = max(16, storeErrorLabel.intrinsicContentSize.height)
+            storeErrorLabel.frame = NSRect(x: side, y: y, width: width, height: errorHeight)
+            y += errorHeight
         }
         y += 16
         topLine.frame = NSRect(x: side, y: y, width: width, height: 1)
         y += 17
-        languageLabel.frame = NSRect(x: side, y: y + 6, width: 200, height: 18)
+        languageLabel.preferredMaxLayoutWidth = width - 240
+        let languageHeight = max(18, languageLabel.intrinsicContentSize.height)
+        languageLabel.frame = NSRect(x: side, y: y + 6, width: width - 240, height: languageHeight)
         languagePopup.frame = NSRect(x: bounds.width - side - 224, y: y, width: 224, height: 30)
-        y += 38
+        y += max(38, languageHeight + 14)
         bottomLine.frame = NSRect(x: side, y: y, width: width, height: 1)
         y += 23
-        helpButton.frame = NSRect(x: side, y: y, width: 246, height: 30)
-        feedbackButton.frame = NSRect(x: side + 258, y: y, width: 246, height: 30)
-        y += 46
+        let helpHeight = max(helpButton.height(forWidth: 246), feedbackButton.height(forWidth: 246))
+        helpButton.frame = NSRect(x: side, y: y, width: 246, height: helpHeight)
+        feedbackButton.frame = NSRect(x: side + 258, y: y, width: 246, height: helpHeight)
+        y += helpHeight + 16
         websiteButton.sizeToFit()
         sourceButton.sizeToFit()
         let linksWidth = websiteButton.frame.width + 24 + sourceButton.frame.width
@@ -2307,7 +2592,8 @@ final class FlashMaskSettingsPanel: NSView {
         sourceButton.frame = NSRect(x: websiteButton.frame.maxX + 24, y: y, width: sourceButton.frame.width, height: 18)
         y += 22
         if !linkErrorLabel.isHidden {
-            linkErrorLabel.frame = NSRect(x: side, y: y, width: width, height: 16)
+            linkErrorLabel.preferredMaxLayoutWidth = width
+            linkErrorLabel.frame = NSRect(x: side, y: y, width: width, height: max(16, linkErrorLabel.intrinsicContentSize.height))
         }
     }
 
@@ -2332,31 +2618,35 @@ final class FlashMaskSettingsPanel: NSView {
     }
 
     private func rebuildLanguageItems() {
-        let titles = isChinese
-            ? ["跟随系统", "中文", "English"]
-            : ["Use System Language", "Chinese", "English"]
-        let current = languagePopup.indexOfSelectedItem
+        let catalog = FlashMaskLocalizationCatalog.bundled
+        let installed = catalog.supportedLocales
+        let current = languagePopup.selectedItem?.representedObject as? String ?? "system"
+        languagePreferenceValues = ["system"] + (installed.isEmpty ? ["zh", "en"] : installed)
+        let systemTitle = flashMaskText("native.language.system", language: language,
+                                       fallback: isChinese ? "跟随系统" : "Use System Language")
+        let titles = [systemTitle] + languagePreferenceValues.dropFirst().map {
+            catalog.resources[$0]?.nativeName ?? ($0 == "zh" ? (isChinese ? "中文" : "Chinese") : "English")
+        }
         let previousAction = languagePopup.action
         languagePopup.action = nil
         languagePopup.removeAllItems()
         languagePopup.addItems(withTitles: titles)
-        if (0..<titles.count).contains(current) {
-            languagePopup.selectItem(at: current)
+        for (index, value) in languagePreferenceValues.enumerated() {
+            languagePopup.item(at: index)?.representedObject = value
         }
+        selectLanguagePreference(current)
         languagePopup.action = previousAction
     }
 
     func selectLanguagePreference(_ preference: String) {
-        let values = ["system", "zh", "en"]
-        languagePopup.selectItem(at: values.firstIndex(of: preference) ?? 0)
+        languagePopup.selectItem(at: languagePreferenceValues.firstIndex(of: preference) ?? 0)
     }
 
     @objc private func check() { onCheck?() }
     @objc private func changeLanguage() {
-        let values = ["system", "zh", "en"]
         let index = languagePopup.indexOfSelectedItem
-        guard (0..<values.count).contains(index) else { return }
-        onLanguage?(values[index])
+        guard languagePreferenceValues.indices.contains(index) else { return }
+        onLanguage?(languagePreferenceValues[index])
     }
     @objc private func openHelp() { onHelp?() }
     @objc private func openFeedback() { onFeedback?() }
@@ -2380,7 +2670,7 @@ final class FlashMaskSettingsController: NSObject, NSWindowDelegate {
             defer: false
         )
         super.init()
-        window.title = "设置"
+        window.title = flashMaskText("native.settings.title", language: resolvedFlashMaskLanguage(), fallback: "设置")
         window.appearance = NSAppearance(named: .darkAqua)
         window.isReleasedWhenClosed = false
         window.backgroundColor = FlashMaskSettingsChrome.background
@@ -2485,7 +2775,11 @@ final class FlashMaskAppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private var isChineseInterface: Bool {
-        resolvedLanguage(UserDefaults.standard.string(forKey: "FlashMaskLanguage") ?? "system") == "zh"
+        interfaceLanguage.hasPrefix("zh")
+    }
+
+    private var interfaceLanguage: String {
+        resolvedLanguage(currentLanguagePreference)
     }
 
     private var currentLanguagePreference: String {
@@ -2541,7 +2835,7 @@ final class FlashMaskAppDelegate: NSObject, NSApplicationDelegate {
 
     func reloadSettingsCopy() {
         guard let settingsController else { return }
-        settingsController.window.title = isChineseInterface ? "设置" : "Settings"
+        settingsController.window.title = flashMaskText("native.settings.title", language: interfaceLanguage, fallback: isChineseInterface ? "设置" : "Settings")
         settingsController.panel.selectLanguagePreference(currentLanguagePreference)
         applySettingsModel(checking: updateChecker.isInFlight && updateVisibleGeneration != 0, outcome: lastCompletedOutcome)
         settingsController.panel.clearOpenErrors()
@@ -2550,19 +2844,20 @@ final class FlashMaskAppDelegate: NSObject, NSApplicationDelegate {
 
     private func applySettingsModel(checking: Bool, outcome: FlashMaskUpdateOutcome?) {
         guard let settingsController else { return }
-        let model = flashMaskSettingsUpdateViewModel(checking: checking, outcome: outcome, isChinese: isChineseInterface)
+        let model = flashMaskSettingsUpdateViewModel(checking: checking, outcome: outcome, isChinese: isChineseInterface, language: interfaceLanguage)
         let versionLine = flashMaskLocalVersionLine(
             shortVersion: shortVersionProvider(),
             build: buildNumberProvider(),
-            isChinese: isChineseInterface
+            isChinese: isChineseInterface,
+            language: interfaceLanguage
         )
-        settingsController.panel.apply(model, isChinese: isChineseInterface, versionLine: versionLine)
+        settingsController.panel.apply(model, isChinese: isChineseInterface, versionLine: versionLine, language: interfaceLanguage)
         settingsController.fit()
         if checking {
             NSAccessibility.post(
                 element: settingsController.panel.checkButton,
                 notification: .announcementRequested,
-                userInfo: [.announcement: isChineseInterface ? "正在检查更新" : "Checking for updates"]
+                userInfo: [.announcement: flashMaskText("native.update.announcement", language: interfaceLanguage, fallback: isChineseInterface ? "正在检查更新" : "Checking for updates")]
             )
         } else if let title = model.resultTitle, !title.isEmpty {
             NSAccessibility.post(
@@ -2586,7 +2881,7 @@ final class FlashMaskAppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func presentChecking() {
-        let spec = flashMaskCheckingAlert(isChinese: isChineseInterface)
+        let spec = flashMaskCheckingAlert(isChinese: isChineseInterface, language: interfaceLanguage)
         if let handler = updatePromptHandler {
             if checkingPromptOutstanding { return }
             checkingPromptOutstanding = true
@@ -2616,7 +2911,7 @@ final class FlashMaskAppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func presentUpdateResult(_ outcome: FlashMaskUpdateOutcome, country: String?) {
-        let spec = flashMaskUpdateAlert(outcome: outcome, isChinese: isChineseInterface)
+        let spec = flashMaskUpdateAlert(outcome: outcome, isChinese: isChineseInterface, language: interfaceLanguage)
         if let handler = updatePromptHandler {
             handler(spec) { [weak self] response in
                 self?.handleUpdateResultResponse(response, outcome: outcome, country: country, spec: spec)
@@ -2654,11 +2949,12 @@ final class FlashMaskAppDelegate: NSObject, NSApplicationDelegate {
     private func openAppStorePage(country: String?) {
         guard let urls = flashMaskResolvedAppStorePageURLs(countryCode: country) else {
             settingsController?.panel.showStoreOpenFailed()
+            settingsController?.fit()
             presentUpdateNotice(
-                title: isChineseInterface ? "无法打开 App Store" : "Couldn’t Open the App Store",
-                body: isChineseInterface
+                title: flashMaskText("native.update.storeOpenFailed", language: interfaceLanguage, fallback: isChineseInterface ? "无法打开 App Store" : "Couldn’t Open the App Store"),
+                body: flashMaskText("native.update.noStoreDestination", language: interfaceLanguage, fallback: isChineseInterface
                     ? "没有可用的商店地址。"
-                    : "No App Store destination is available."
+                    : "No App Store destination is available.")
             )
             return
         }
@@ -2666,11 +2962,12 @@ final class FlashMaskAppDelegate: NSObject, NSApplicationDelegate {
         if open(urls.store) { return }
         if open(urls.https) { return }
         settingsController?.panel.showStoreOpenFailed()
+        settingsController?.fit()
         presentUpdateNotice(
-            title: isChineseInterface ? "无法打开 App Store" : "Couldn’t Open the App Store",
-            body: isChineseInterface
+            title: flashMaskText("native.update.storeOpenFailed", language: interfaceLanguage, fallback: isChineseInterface ? "无法打开 App Store" : "Couldn’t Open the App Store"),
+            body: flashMaskText("native.update.storePageCouldNotOpen", language: interfaceLanguage, fallback: isChineseInterface
                 ? "系统未能打开商店页面。"
-                : "The App Store page could not be opened."
+                : "The App Store page could not be opened.")
         )
     }
 
@@ -2683,6 +2980,7 @@ final class FlashMaskAppDelegate: NSObject, NSApplicationDelegate {
         } else {
             settingsController?.panel.showLinkOpenFailed()
         }
+        settingsController?.fit()
     }
 
     private func openResourceURL(_ url: URL) -> Bool {
@@ -2696,7 +2994,7 @@ final class FlashMaskAppDelegate: NSObject, NSApplicationDelegate {
             kind: .notice,
             title: title,
             body: body,
-            buttons: [isChineseInterface ? "好" : "OK"]
+            buttons: [flashMaskText("native.button.ok", language: interfaceLanguage, fallback: isChineseInterface ? "好" : "OK")]
         )
         if let handler = updatePromptHandler {
             handler(spec) { _ in }
@@ -2705,42 +3003,43 @@ final class FlashMaskAppDelegate: NSObject, NSApplicationDelegate {
 
     func installMainMenu() {
         let preference = UserDefaults.standard.string(forKey: "FlashMaskLanguage") ?? "system"
-        let systemIsChinese = resolvedLanguage(preference) == "zh"
-        let titles = flashMaskMainMenuTitles(isChinese: systemIsChinese)
+        let language = resolvedLanguage(preference)
+        let systemIsChinese = language.hasPrefix("zh")
+        let titles = flashMaskMainMenuTitles(isChinese: systemIsChinese, language: language)
         let mainMenu = NSMenu()
         let appMenuItem = NSMenuItem(title: titles.app, action: nil, keyEquivalent: "")
         mainMenu.addItem(appMenuItem)
         let appMenu = NSMenu(title: titles.app)
-        let settingsItem = NSMenuItem(title: systemIsChinese ? "设置…" : "Settings…", action: #selector(showSettings(_:)), keyEquivalent: ",")
+        let settingsItem = NSMenuItem(title: flashMaskText("native.menu.settings", language: language, fallback: systemIsChinese ? "设置…" : "Settings…"), action: #selector(showSettings(_:)), keyEquivalent: ",")
         settingsItem.target = self
         appMenu.addItem(settingsItem)
         let updatesItem = NSMenuItem(
-            title: systemIsChinese ? "检查更新…" : "Check for Updates…",
+            title: flashMaskText("native.update.check", language: language, fallback: systemIsChinese ? "检查更新…" : "Check for Updates…"),
             action: #selector(checkForUpdates(_:)),
             keyEquivalent: ""
         )
         updatesItem.target = self
         appMenu.addItem(updatesItem)
         appMenu.addItem(.separator())
-        appMenu.addItem(NSMenuItem(title: systemIsChinese ? "退出 Flash Mask" : "Quit Flash Mask", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
+        appMenu.addItem(NSMenuItem(title: flashMaskText("native.menu.quit", language: language, fallback: systemIsChinese ? "退出 Flash Mask" : "Quit Flash Mask"), action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
         appMenuItem.submenu = appMenu
 
         let fileMenuItem = NSMenuItem(title: titles.file, action: nil, keyEquivalent: "")
         mainMenu.addItem(fileMenuItem)
         let fileMenu = NSMenu(title: titles.file)
-        fileMenu.addItem(NSMenuItem(title: systemIsChinese ? "关闭窗口" : "Close Window", action: #selector(NSWindow.performClose(_:)), keyEquivalent: "w"))
+        fileMenu.addItem(NSMenuItem(title: flashMaskText("native.menu.closeWindow", language: language, fallback: systemIsChinese ? "关闭窗口" : "Close Window"), action: #selector(NSWindow.performClose(_:)), keyEquivalent: "w"))
         fileMenuItem.submenu = fileMenu
 
         let editMenuItem = NSMenuItem(title: titles.edit, action: nil, keyEquivalent: "")
         mainMenu.addItem(editMenuItem)
         let editMenu = NSMenu(title: titles.edit)
-        let undoItem = NSMenuItem(title: systemIsChinese ? "撤销" : "Undo", action: #selector(performUndo(_:)), keyEquivalent: "z")
+        let undoItem = NSMenuItem(title: flashMaskText("native.menu.undo", language: language, fallback: systemIsChinese ? "撤销" : "Undo"), action: #selector(performUndo(_:)), keyEquivalent: "z")
         undoItem.target = self
         editMenu.addItem(undoItem)
         editMenu.addItem(.separator())
-        editMenu.addItem(NSMenuItem(title: systemIsChinese ? "剪切" : "Cut", action: #selector(NSText.cut(_:)), keyEquivalent: "x"))
-        editMenu.addItem(NSMenuItem(title: systemIsChinese ? "复制" : "Copy", action: #selector(NSText.copy(_:)), keyEquivalent: "c"))
-        let pasteItem = NSMenuItem(title: systemIsChinese ? "粘贴" : "Paste", action: #selector(performPaste(_:)), keyEquivalent: "v")
+        editMenu.addItem(NSMenuItem(title: flashMaskText("native.menu.cut", language: language, fallback: systemIsChinese ? "剪切" : "Cut"), action: #selector(NSText.cut(_:)), keyEquivalent: "x"))
+        editMenu.addItem(NSMenuItem(title: flashMaskText("native.menu.copy", language: language, fallback: systemIsChinese ? "复制" : "Copy"), action: #selector(NSText.copy(_:)), keyEquivalent: "c"))
+        let pasteItem = NSMenuItem(title: flashMaskText("native.menu.paste", language: language, fallback: systemIsChinese ? "粘贴" : "Paste"), action: #selector(performPaste(_:)), keyEquivalent: "v")
         pasteItem.target = self
         editMenu.addItem(pasteItem)
         editMenuItem.submenu = editMenu
@@ -2748,7 +3047,7 @@ final class FlashMaskAppDelegate: NSObject, NSApplicationDelegate {
         let windowMenuItem = NSMenuItem(title: titles.window, action: nil, keyEquivalent: "")
         mainMenu.addItem(windowMenuItem)
         let windowMenu = NSMenu(title: titles.window)
-        windowMenu.addItem(NSMenuItem(title: systemIsChinese ? "最小化" : "Minimize", action: #selector(NSWindow.performMiniaturize(_:)), keyEquivalent: "m"))
+        windowMenu.addItem(NSMenuItem(title: flashMaskText("native.menu.minimize", language: language, fallback: systemIsChinese ? "最小化" : "Minimize"), action: #selector(NSWindow.performMiniaturize(_:)), keyEquivalent: "m"))
         windowMenuItem.submenu = windowMenu
         NSApp.windowsMenu = windowMenu
 
@@ -2756,14 +3055,14 @@ final class FlashMaskAppDelegate: NSObject, NSApplicationDelegate {
         mainMenu.addItem(helpMenuItem)
         let helpMenu = NSMenu(title: titles.help)
         let userGuideItem = NSMenuItem(
-            title: systemIsChinese ? "使用帮助" : "User Guide",
+            title: flashMaskText("native.help.userGuide", language: language, fallback: systemIsChinese ? "使用帮助" : "User Guide"),
             action: #selector(openUserGuide(_:)),
             keyEquivalent: ""
         )
         userGuideItem.target = self
         helpMenu.addItem(userGuideItem)
         let feedbackItem = NSMenuItem(
-            title: systemIsChinese ? "反馈问题" : "Report an Issue",
+            title: flashMaskText("native.help.feedback", language: language, fallback: systemIsChinese ? "反馈问题" : "Report an Issue"),
             action: #selector(openFeedback(_:)),
             keyEquivalent: ""
         )
@@ -2775,8 +3074,8 @@ final class FlashMaskAppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func resolvedLanguage(_ preference: String) -> String {
-        if preference == "zh" || preference == "en" { return preference }
-        return Locale.preferredLanguages.first?.lowercased().hasPrefix("zh") == true ? "zh" : "en"
+        let installed = FlashMaskLocalizationCatalog.bundled.supportedLocales
+        return flashMaskResolvedInterfaceLanguage(preference: preference, supportedLocales: installed.isEmpty ? ["zh", "en"] : installed)
     }
 }
 

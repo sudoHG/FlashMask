@@ -13,7 +13,6 @@
 		A10000000000000000000004 /* assets in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000006 /* assets */; };
 		A10000000000000000000005 /* src in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000007 /* src */; };
 		A10000000000000000000006 /* FlashMask.icns in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000004 /* FlashMask.icns */; };
-		A10000000000000000000007 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000010 /* InfoPlist.strings */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -83,6 +82,7 @@
 				A30000000000000000000002 /* Sources */,
 				A30000000000000000000001 /* Frameworks */,
 				A30000000000000000000003 /* Resources */,
+				A30000000000000000000004 /* Package Localizations */,
 			);
 			buildRules = (
 			);
@@ -116,6 +116,7 @@
 				en,
 				Base,
 				"zh-Hans",
+				ja,
 			);
 			mainGroup = A40000000000000000000001;
 			productRefGroup = A40000000000000000000003 /* Products */;
@@ -136,11 +137,31 @@
 				A10000000000000000000004 /* assets in Resources */,
 				A10000000000000000000005 /* src in Resources */,
 				A10000000000000000000006 /* FlashMask.icns in Resources */,
-				A10000000000000000000007 /* InfoPlist.strings in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		A30000000000000000000004 /* Package Localizations */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+				"$(SRCROOT)/../scripts/package-localizations.py",
+				"$(SRCROOT)/../src/localizations",
+				"$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/src",
+			);
+			name = "Package Localizations";
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "/usr/bin/python3 \"$SRCROOT/../scripts/package-localizations.py\" --repo-root \"$SRCROOT/..\" --resources \"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH\"\n";
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		A30000000000000000000002 /* Sources */ = {
@@ -196,6 +217,7 @@
 				DEVELOPMENT_TEAM = "";
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				EXECUTABLE_NAME = FlashMask;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = Info.plist;
@@ -222,6 +244,7 @@
 				DEVELOPMENT_TEAM = "";
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				EXECUTABLE_NAME = FlashMask;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = Info.plist;

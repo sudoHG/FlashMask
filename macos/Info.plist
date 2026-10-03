@@ -14,11 +14,7 @@
   <string>$(PRODUCT_NAME)</string>
   <key>CFBundleDevelopmentRegion</key>
   <string>en</string>
-  <key>CFBundleLocalizations</key>
-  <array>
-    <string>en</string>
-    <string>zh-Hans</string>
-  </array>
+  <!-- Supported languages are discovered from validated, automatically packaged .lproj directories. -->
   <key>CFBundlePackageType</key>
   <string>APPL</string>
   <key>CFBundleShortVersionString</key>
