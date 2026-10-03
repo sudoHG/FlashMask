@@ -32,8 +32,32 @@ for resource in index.html src/flash-mask-contract.js src/selection-lasso-cleane
 done
 cmp macos/FlashMask.icns "$resources_path/FlashMask.icns"
 
-for language in en zh-Hans; do
-  plutil -lint "$resources_path/$language.lproj/InfoPlist.strings"
+/usr/bin/python3 -B - "$resources_path" <<'PY'
+import importlib.util
+from pathlib import Path
+import sys
+
+spec = importlib.util.spec_from_file_location("localizations", "scripts/package-localizations.py")
+module = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(module)
+repo = Path.cwd()
+resources = Path(sys.argv[1])
+catalog = module.validated_resources(repo)
+expected_json = {f"{locale}.json" for locale in catalog}
+expected_lproj = {f"{resource['bundle_localization']}.lproj" for resource in catalog.values()}
+assert {file.name for file in (resources / "src/localizations").glob("*.json")} == expected_json, "Bundled JSON locale set differs from source"
+assert {directory.name for directory in resources.glob("*.lproj")} == expected_lproj, "Bundled localization directories differ from source"
+for locale, resource in catalog.items():
+    source = repo / "src/localizations" / f"{locale}.json"
+    packaged = resources / "src/localizations" / f"{locale}.json"
+    assert packaged.read_bytes() == source.read_bytes(), f"{locale}: bundled translation differs from source"
+    localization = f"{resource['bundle_localization']}.lproj/InfoPlist.strings"
+    assert (resources / localization).read_bytes() == (repo / "macos" / localization).read_bytes(), f"{locale}: bundled InfoPlist strings differ from source"
+print("Verified paired localization resources: " + ", ".join(sorted(catalog)))
+PY
+
+for localization in "$resources_path"/*.lproj; do
+  plutil -lint "$localization/InfoPlist.strings"
 done
 
 printf '%s\n' 'Verified Universal binary, macOS 13.0 deployment target and bundled resources.'
