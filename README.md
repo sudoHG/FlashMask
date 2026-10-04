@@ -26,6 +26,7 @@ On macOS, Flash Mask outputs JSON 1.1 with an instruction for the whole image an
 
 - Paste a screenshot directly from the clipboard.
 - Add one instruction for the whole image and optional notes for individual regions.
+- Use the interface in seven languages: English, Simplified Chinese, Traditional Chinese, Japanese, German, French, and Spanish.
 - Use a dedicated settings window to switch language, check for updates, and open the website, help, GitHub source, or support page.
 
 Instead of wrestling with lasso tools, fill layers, and manual exports in complex image editors, Flash Mask converts your selections into agent-ready coordinates in seconds:
@@ -113,14 +114,14 @@ Strict JSON 1.0 consumers must upgrade their validator before accepting JSON 1.1
 - **Dual Coordinate Systems**: Generates both absolute pixel coordinates and resolution-independent normalized coordinates to support varied agent and model schemas.
 - **Original Resolution Fidelity**: Black-and-white PNG masks match source image dimensions 1:1, rendered with pure white selections, pure black backgrounds, and crisp, unfeathered edges.
 - **Direct Local File Paths**: The macOS app outputs verified absolute file paths in JSON so local automation scripts and agents can locate files instantly.
-- **Bilingual Interface**: Seamlessly switch between full English and Chinese interfaces with one click.
+- **Seven Interface Languages**: English, Simplified Chinese, Traditional Chinese, Japanese, German, French, and Spanish. The app follows your system language by default; switch anytime from the language menu in the top bar or in Settings without losing your current image, regions, or notes.
 - **Privacy & Offline First**: Runs 100% locally with no sign-in required, zero ads, and no tracking or analytics SDKs.
 
 ## Getting Flash Mask
 
 - **Mac App Store**: Get the official pre-built app on the [Mac App Store](https://apps.apple.com/us/app/flash-mask/id6803817818?mt=12). A one-time purchase with lifetime access—no subscriptions and no in-app purchases.
 - **Official Website**: Visit [flashmask.net](https://flashmask.net/) for product updates and details.
-- **Source Releases**: Download source code archives from [GitHub Releases](https://github.com/sudoHG/FlashMask/releases/tag/v1.0.0). *(Note: Official binary builds are distributed exclusively through the Mac App Store; GitHub Releases does not attach pre-built binaries).*
+- **Source Releases**: Download source code archives from [GitHub Releases](https://github.com/sudoHG/FlashMask/releases). *(Note: Official binary builds are distributed exclusively through the Mac App Store; GitHub Releases does not attach pre-built binaries).*
 
 ## Open Source Scope
 
@@ -170,10 +171,10 @@ Alternatively, use the included `build.sh` script (run `./build.sh --help` for d
 
 ```sh
 ./build.sh
-./build.sh --version 1.3 --build-number 8 --dmg
+./build.sh --version 1.3.1 --build-number 9 --dmg
 ```
 
-The script defaults to version `1.2` and build `7`; `--version` and `--build-number` override those values. It checks the built app's version, minimum macOS version, and both architecture slices. `--dmg` packages that unsigned app for local testing; the resulting DMG is not suitable for Gatekeeper distribution.
+The script defaults to version `1.3` and build `8`; `--version` and `--build-number` override those values. It checks the built app's version, minimum macOS version, and both architecture slices. `--dmg` packages that unsigned app for local testing; the resulting DMG is not suitable for Gatekeeper distribution.
 
 For distribution outside the Mac App Store, sign the app with your own **Developer ID Application** identity and a secure timestamp, verify its code signature, submit it for notarization, and staple and validate the accepted ticket. Then package that exact app with:
 
@@ -198,6 +199,9 @@ The test suite covers:
 - Polygon geometry calculations and lasso vertex simplification (smoothing and redundancy removal)
 - 1:1 black-and-white PNG mask pixel rasterization accuracy
 - Performance boundaries and vertex count limit safeguards
+- Localization resources: identical keys, placeholders, and paired bundle resources across all seven languages
+
+On macOS, `npm test` also compiles and runs the native Swift tests (localization resources and Settings window placement), which briefly open test windows. Run the native interface tests separately with `node --test tests/mac-localization-ui.js`. CI runs the core tests on Linux and the native and interface tests on Apple Silicon macOS 15, Intel, and macOS 14; see the [contribution guide](贡献指南.md).
 
 ## Directory Structure
 
@@ -205,6 +209,8 @@ The test suite covers:
 |---|---|
 | `index.html` | Embedded editor interface, canvas interactions, and UI state machine |
 | `src/` | Coordinate contract parsing, mask rasterization, and selection vertex cleaning algorithms |
+| `src/localizations/` | Interface text for all seven languages, one JSON file per language |
+| `scripts/` | Build-time script that validates and packages the paired localization resources |
 | `schemas/` | Official JSON Schema definitions for the Flash Mask 1.0 and 1.1 Coordinate Contracts |
 | `macos/` | Native AppKit / WKWebView host wrapper, security-scoped file access, and Xcode project |
 | `tests/` | Unit tests, contract validation suites, and test fixtures |
