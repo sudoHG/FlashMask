@@ -13,8 +13,8 @@ PROJECT='macos/Flash Mask.xcodeproj'
 SCHEME='Flash Mask'
 CONFIGURATION='Release'
 DERIVED='.derivedData/build'
-VERSION='1.2'
-BUILD_NUMBER='7'
+VERSION='1.3'
+BUILD_NUMBER='8'
 MAKE_DMG=0
 PACKAGE_APP=''
 VERSION_WAS_SET=0
@@ -30,8 +30,8 @@ Usage:
 
 Options:
   --dmg                  Also create an unsigned DMG for local testing.
-  --version VERSION      Override CFBundleShortVersionString (default: 1.2).
-  --build-number NUMBER  Override CFBundleVersion (default: 7).
+  --version VERSION      Override CFBundleShortVersionString (default: 1.3).
+  --build-number NUMBER  Override CFBundleVersion (default: 8).
   --package-app PATH     Verify and package an existing notarized Universal app.
   -h, --help             Show this help.
 
