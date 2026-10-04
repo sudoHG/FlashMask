@@ -124,7 +124,8 @@ test('同一打包器发现新增成对资源、拒绝缺项和变量变更，�
 test('原生在隔离的三语言 fixture 中读取、格式化、匹配地区与偏好', { skip: process.platform !== 'darwin' }, async () => {
   const { stdout: disk } = await run('/bin/df', ['-k', '/System/Volumes/Data']);
   const availableKiB = Number(disk.trim().split('\n').at(-1).trim().split(/\s+/)[3]);
-  assert.ok(availableKiB >= 80 * 1024 * 1024, '80 GiB required before compiling native harness');
+  // Protects contributors' disks; hosted CI runners are disposable and smaller.
+  if (!process.env.CI) assert.ok(availableKiB >= 80 * 1024 * 1024, '80 GiB required before compiling native harness');
   const directory = temporary('localization-native-');
   try {
     const cases = path.join(directory, 'cases');

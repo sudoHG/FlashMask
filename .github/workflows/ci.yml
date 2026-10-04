@@ -50,3 +50,22 @@ jobs:
         run: ./build.sh
       - name: Verify architectures, deployment target and resources
         run: bash .github/scripts/verify-mac-build.sh
+
+  mac-native-tests:
+    name: Mac native tests
+    runs-on: macos-15
+    timeout-minutes: 30
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_26.3.app/Contents/Developer
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '22'
+      - run: npm ci --ignore-scripts
+      - name: Core and native tests
+        run: npm test
+      - name: Native UI tests
+        run: node --test tests/mac-localization-ui.js
