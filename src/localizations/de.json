@@ -55,7 +55,7 @@
     "editor.jsonPreview": "JSON-Vorschau",
     "editor.outputReady": "Ihr JSON und Ihre Maske sind bereit.",
     "editor.outside": "Die Auswahl muss innerhalb des Bildes liegen. Bitte versuchen Sie es erneut.",
-    "editor.overallNote": "Notiz zum Gesamtbild",
+    "editor.overallNote": "Gesamtnotiz",
     "editor.overallPlaceholder": "Anweisungen für das gesamte Bild oder leer lassen",
     "editor.overlap": "Ausgewählte Bereiche dürfen sich nicht überschneiden. Bitte versuchen Sie es erneut.",
     "editor.pathFailed": "Auf diese Datei konnte nicht zugegriffen werden. Bitte importieren Sie sie erneut.",
