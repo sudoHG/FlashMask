@@ -69,3 +69,35 @@ jobs:
         run: npm test
       - name: Native UI tests
         run: node --test tests/mac-localization-ui.js
+
+  mac-native-tests-other:
+    name: Mac native tests (${{ matrix.label }})
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - label: Intel
+            runner: macos-15-intel
+          - label: macOS 14
+            runner: macos-14
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '22'
+      - name: Select the newest installed Xcode
+        run: |
+          xcode=$(ls -d /Applications/Xcode_*.app | sort -V | tail -1)
+          sudo xcode-select -s "$xcode/Contents/Developer"
+          sw_vers
+          uname -m
+          xcodebuild -version
+      - run: npm ci --ignore-scripts
+      - name: Core and native tests
+        run: npm test
+      - name: Native UI tests
+        run: node --test tests/mac-localization-ui.js
