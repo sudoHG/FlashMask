@@ -158,6 +158,8 @@ fi
 validate_version "$VERSION"
 validate_build_number "$BUILD_NUMBER"
 
+/usr/bin/python3 scripts/package-localizations.py --repo-root .
+
 printf '%s\n' "==> Building unsigned Universal (arm64 + x86_64) $CONFIGURATION app for macOS 13.0+..."
 set -- xcodebuild \
   -project "$PROJECT" \

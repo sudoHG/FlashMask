@@ -89,6 +89,10 @@
   .tool-button { min-width: 40px; height: 40px; border: 0; border-radius: 10px; background: transparent; color: var(--text); cursor: pointer; padding: 0 10px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; white-space: nowrap; }
   .tool-button:hover:not(:disabled) { background: rgba(255,255,255,.07); }
   .tool-button:disabled { color: var(--dim); cursor: not-allowed; }
+  html.mac-localized .floating-toolbar { width: max-content; max-width: calc(100% - 24px); white-space: normal; flex-wrap: wrap; justify-content: center; }
+  html.mac-localized .tool-button { height: auto; min-height: 40px; max-width: 200px; flex-shrink: 0; white-space: normal; }
+  html.mac-localized .tool-button > [data-i18n] { min-width: 0; }
+  html.mac-localized .canvas-status { white-space: normal; text-align: center; }
   .tool-separator { width: 1px; height: 27px; background: var(--line); margin: 0 4px; }
   .actual-size-button { min-width: 86px; }
   .actual-size-button .icon { width: 22px; height: 22px; }
@@ -100,6 +104,7 @@
 
   .side-panel { display: flex; flex-direction: column; padding: 16px; background: linear-gradient(145deg,#151b20,#11161a); }
   .empty-guide { height: 100%; display: flex; flex-direction: column; justify-content: flex-start; padding: clamp(62px,9vh,92px) 14px 22px; }
+  html.mac-localized .empty-guide { overflow: auto; }
   .empty-guide h2 { margin: 0; max-width: 310px; font-size: clamp(30px,2.3vw,36px); line-height: 1.14; letter-spacing: -.045em; }
   .empty-guide > p { margin: 17px 0 0; color: var(--muted); font-size: 13px; line-height: 1.6; white-space: normal; text-wrap: balance; }
   .guide-rule { height: 1px; margin: 34px 0 38px; background: linear-gradient(90deg,rgba(255,229,0,.42),rgba(255,229,0,.06)); }
@@ -176,6 +181,25 @@
     .result-button { min-height: 38px; margin-top: 7px; }
   }
 
+  html.mac-localized .empty-guide { padding: 32px 8px 16px; }
+  html.mac-localized .empty-guide h2 { max-width: none; font-size: 24px; line-height: 1.18; letter-spacing: -.03em; }
+  html.mac-localized .empty-guide > p { margin-top: 12px; line-height: 1.5; }
+  html.mac-localized .guide-rule { flex: none; margin: 20px 0 24px; }
+  html.mac-localized .guide-step { grid-template-columns: 40px minmax(0,1fr); column-gap: 12px; min-height: 40px; padding-bottom: 18px; font-size: 13px; line-height: 1.45; }
+  html.mac-localized .guide-step:last-child { padding-bottom: 0; }
+  html.mac-localized .guide-step:not(:last-child)::after { left: 19px; top: 40px; }
+  html.mac-localized .guide-icon { width: 40px; height: 40px; }
+  html.mac-localized .guide-cases { max-width: none; margin-top: 24px; }
+  html.mac-localized .guide-cases ul { gap: 6px; margin-top: 8px; }
+  @media (max-height: 700px) {
+    html.mac-localized .empty-guide { padding-top: 18px; }
+    html.mac-localized .empty-guide h2 { font-size: 22px; }
+    html.mac-localized .guide-rule { margin: 14px 0 18px; }
+    html.mac-localized .guide-step { padding-bottom: 14px; }
+    html.mac-localized .guide-step:last-child { padding-bottom: 0; }
+    html.mac-localized .guide-cases { margin-top: 18px; }
+  }
+
   html.mac-notes .result-panel { gap: 0; }
   html.mac-notes .json-shell { flex: 0 0 160px; min-height: 0; }
   html.mac-notes .task-actions { flex: 1; min-height: 0; display: flex; flex-direction: column; }
@@ -193,6 +217,9 @@
   html.mac-notes #overall-tab { min-width: 60px; }
   html.mac-notes #delete-note-region { flex: none; border: 0; background: none; color: var(--muted); font-size: 11px; cursor: pointer; padding: 2px; }
   html.mac-notes #delete-note-region:disabled { opacity: .3; cursor: default; }
+  html.mac-localized.mac-notes .note-navigation { height: auto; min-height: 30px; padding-bottom: 3px; }
+  html.mac-localized.mac-notes #overall-tab { flex-shrink: 1; height: auto; min-height: 24px; padding-top: 3px; padding-bottom: 3px; white-space: normal; }
+  html.mac-localized.mac-notes .areas { min-width: 32px; padding: 3px 0; align-items: center; }
   .note-navigation[hidden] { display: none !important; }
   @media (max-height: 720px) {
     html.mac-notes .json-shell { flex-basis: 112px; }
@@ -363,6 +390,29 @@
     const deleteRegionButton = document.querySelector('#delete-region-action');
     const bridge = () => window.webkit?.messageHandlers?.flashMaskBridge;
     const webAdapter = () => window.FlashMaskWebAdapter;
+    const macLocalization = (() => {
+      const catalog = window.__flashMaskLocalization;
+      if (webShell || !bridge() || catalog?.schema_version !== 1 || !Array.isArray(catalog.locales)) return null;
+      const keys = Object.keys(catalog.strings?.en ?? {}).sort();
+      if (keys.length !== 132 || !catalog.locales.some((item) => item.locale === catalog.language)) return null;
+      for (const item of catalog.locales) {
+        const strings = catalog.strings?.[item.locale];
+        if (typeof item.native_name !== 'string' || typeof item.html_lang !== 'string' || !strings
+          || Object.keys(strings).sort().join('\0') !== keys.join('\0')
+          || Object.values(strings).some((value) => typeof value !== 'string' || !value.trim())) return null;
+      }
+      return catalog;
+    })();
+    const macLocale = (language) => macLocalization?.locales.find((item) => item.locale === language);
+    if (macLocalization) document.documentElement.classList.add('mac-localized');
+    function localizedMacText(key, argumentsByName = {}) {
+      if (!macLocalization) return null;
+      const template = macLocalization.strings[state.language]?.[key] ?? macLocalization.strings.en[key];
+      if (typeof template !== 'string') return null;
+      const tokens = [...template.matchAll(/\{([a-z][a-z0-9_]*)\}/g)].map((match) => match[1]);
+      if (tokens.length !== Object.keys(argumentsByName).length || tokens.some((token) => !(token in argumentsByName))) return null;
+      return template.replace(/\{([a-z][a-z0-9_]*)\}/g, (_, token) => String(argumentsByName[token]));
+    }
     const nativePathTimeoutMilliseconds = 1000;
     const edgeHitRadiusCss = 4;
     const supportedImageTypes = new Set(['image/png', 'image/jpeg', 'image/webp']);
@@ -385,7 +435,8 @@
       toolbarPosition: null,
       scrollbarDrag: null,
       spaceDown: false,
-      language: window.__flashMaskInitialLanguage ?? (navigator.language?.toLowerCase().startsWith('zh') ? 'zh' : 'en'),
+      language: macLocalization?.language ?? (window.__flashMaskInitialLanguage === 'en' ? 'en'
+        : window.__flashMaskInitialLanguage === 'zh' ? 'zh' : navigator.language?.toLowerCase().startsWith('zh') ? 'zh' : 'en'),
       downloadUrl: null,
       ignoredPathResponses: 0,
       pathRequestNonce: null,
@@ -453,7 +504,7 @@
         selectAreaNote: 'Select an area to add a note', areaPlaceholder: 'Describe this area’s edit, or leave blank', overallPlaceholder: 'Instructions for the whole image, or leave blank'
       }
     };
-    const t = (key) => messages[state.language]?.[key] ?? messages.zh[key] ?? key;
+    const t = (key) => localizedMacText(`editor.${key}`) ?? messages[state.language]?.[key] ?? messages.zh[key] ?? key;
 
     const pngDimensions = (bytes) => {
       if (String.fromCharCode(...bytes.subarray(12, 16)) !== 'IHDR') throw new Error('mask PNG is missing IHDR');
@@ -599,7 +650,8 @@
           button.textContent = String(region.id);
           button.dataset.area = String(region.id);
           button.setAttribute('aria-pressed', String(state.noteScope === 'area' && region.id === state.noteRegionId));
-          button.setAttribute('aria-label', state.language === 'en' ? `Area ${region.id}` : `区域 ${region.id}`);
+          button.setAttribute('aria-label', localizedMacText('dynamic.regionLabel', { id: region.id })
+            ?? (state.language === 'en' ? `Area ${region.id}` : `区域 ${region.id}`));
           button.addEventListener('click', () => {
             commitPromptInput();
             state.selectedRegion = state.regions.indexOf(region);
@@ -613,6 +665,19 @@
           areaTabs.append(button);
         }
         if (focusedId) areaTabs.querySelector(`[data-area="${focusedId}"]`)?.focus();
+        if (macLocalization) {
+          const selected = areaTabs.querySelector('[aria-pressed="true"]');
+          const firstVisible = selected ?? areaTabs.firstElementChild;
+          areaTabs.style.minWidth = `${Math.max(32, Math.ceil(firstVisible?.getBoundingClientRect().width ?? 26) + 2)}px`;
+          if (selected) {
+            const bounds = areaTabs.getBoundingClientRect();
+            const button = selected.getBoundingClientRect();
+            const left = bounds.left + areaTabs.clientLeft;
+            const right = left + areaTabs.clientWidth;
+            if (button.left < left) areaTabs.scrollLeft -= left - button.left;
+            else if (button.right > right) areaTabs.scrollLeft += button.right - right;
+          }
+        }
       }
       syncPromptInput();
     }
@@ -621,7 +686,8 @@
       const task = state.task;
       imageStage.style.transform = `translate(${state.viewport.x}px, ${state.viewport.y}px) scale(${state.viewport.zoom})`;
       const ready = task?.imageStatus === 'ready';
-      changeImageLabel.textContent = state.language === 'en' ? (ready ? 'Change Image' : 'Open Image') : (ready ? '更换图片' : '打开图片');
+      changeImageLabel.textContent = localizedMacText(ready ? 'editor.changeImage' : 'editor.chooseImage')
+        ?? (state.language === 'en' ? (ready ? 'Change Image' : 'Open Image') : (ready ? '更换图片' : '打开图片'));
       layout.classList.toggle('ready', ready);
       imageStage.hidden = !ready;
       emptyCanvas.hidden = ready;
@@ -650,7 +716,10 @@
       undoButton.disabled = state.history.length === 0 || Boolean(state.interaction);
       clearButton.disabled = state.regions.length === 0 || Boolean(state.interaction);
       zoomLabel.textContent = `${Math.round(state.viewport.zoom * 100)}%`;
-      regionCount.textContent = state.language === 'zh' ? `${state.regions.length} 个区域` : `${state.regions.length} area${state.regions.length === 1 ? '' : 's'}`;
+      const count = state.regions.length;
+      const plural = macLocalization ? new Intl.PluralRules(macLocale(state.language).html_lang).select(count) : null;
+      regionCount.textContent = localizedMacText(`dynamic.regionCount.${plural === 'one' ? 'one' : 'other'}`, { count })
+        ?? (state.language === 'zh' ? `${state.regions.length} 个区域` : `${state.regions.length} area${state.regions.length === 1 ? '' : 's'}`);
       renderNoteTabs();
       promptCount.textContent = String(promptInput.value.length);
       promptCount.hidden = promptInput.value.length === 0;
@@ -2118,7 +2187,7 @@
         dropTitle.textContent = english ? 'Click anywhere to open an image' : '点击任意位置打开图片';
         return;
       }
-      dropTitle.textContent = english ? 'Drop an image here, or open one' : '拖入图片，或打开图片';
+      dropTitle.textContent = localizedMacText('editor.dropTitle') ?? (english ? 'Drop an image here, or open one' : '拖入图片，或打开图片');
     }
 
     function setDropReady(ready) {
@@ -2144,7 +2213,7 @@
     }
 
     function setLanguage(language) {
-      state.language = language;
+      state.language = macLocalization ? (macLocale(language) ? language : 'en') : (language === 'en' ? 'en' : 'zh');
       const english = language === 'en';
       const values = {
         dropTitle: english ? 'Drop an image here, or open one' : '拖入图片，或打开图片', fileFormats: english ? 'PNG, JPG/JPEG, WebP' : 'PNG、JPG、JPEG、WebP', chooseImage: english ? 'Open Image' : '打开图片',
@@ -2159,8 +2228,14 @@
         areaPlaceholder: english ? 'Describe this area’s edit, or leave blank' : '只说明这个区域要怎样修改，可留空',
         overallPlaceholder: english ? 'Instructions for the whole image, or leave blank' : '对整张图片的要求，可留空'
       };
-      document.querySelectorAll('[data-i18n]').forEach((element) => { if (values[element.dataset.i18n]) element.innerHTML = values[element.dataset.i18n]; });
-      document.documentElement.lang = english ? 'en' : 'zh-CN';
+      document.querySelectorAll('[data-i18n]').forEach((element) => {
+        const key = element.dataset.i18n;
+        const value = localizedMacText(`editor.${key}`) ?? values[key];
+        if (!value) return;
+        if (key === 'guideTitle' || key === 'guideSubtitle') element.innerHTML = value;
+        else element.textContent = value;
+      });
+      document.documentElement.lang = macLocale(state.language)?.html_lang ?? (english ? 'en' : 'zh-CN');
       promptInput.placeholder = english ? 'Example:\nKeep the mountain and remove the clouds.' : '例如：\n保留山体，去掉天空中的云。';
       preview.alt = english ? 'Image being edited' : '导入图片预览';
       selectionOverlay.setAttribute('aria-label', english ? 'Image area selector' : '图片圈选区域');
@@ -2175,10 +2250,38 @@
       languageToggle.setAttribute('aria-label', english ? 'Switch to Chinese' : '切换为 English');
       websiteLink.setAttribute('aria-label', english ? 'Open website' : '打开官网');
       githubLink.setAttribute('aria-label', english ? 'Open GitHub source' : '打开 GitHub 源码');
+      if (macLocalization) {
+        const aria = (element, key, attribute = 'aria-label') => element.setAttribute(attribute, localizedMacText(`editor.aria.${key}`));
+        aria(preview, 'previewAlt', 'alt');
+        aria(selectionOverlay, 'selector');
+        aria(toolbarHandle, 'toolbar');
+        aria(zoomOutButton, 'zoomOut');
+        aria(zoomInButton, 'zoomIn');
+        aria(actualSizeButton, 'actualSize');
+        aria(actualSizeButton, 'actualSizeHint', 'title');
+        aria(horizontalScrollbar, 'panHorizontal');
+        aria(verticalScrollbar, 'panVertical');
+        aria(websiteLink, 'website');
+        aria(githubLink, 'github');
+        aria(areaTabs, 'areaTabs');
+        aria(languageToggle, 'chooseLanguage');
+        languageToggle.querySelector('span').textContent = macLocale(state.language).native_name;
+        languageToggle.setAttribute('aria-haspopup', 'menu');
+        languageToggle.setAttribute('aria-expanded', 'false');
+      }
       refreshEmptyCanvasTitle();
       updateFocusLabel();
       renderedJson = null;
       render();
+    }
+
+    function setLanguagePreferenceFromNative(request) {
+      setLanguage(request.language);
+    }
+
+    function closeLanguageMenu() {
+      languageToggle.setAttribute('aria-expanded', 'false');
+      languageToggle.focus();
     }
 
     function snapshot() {
@@ -2453,9 +2556,20 @@
     githubLink.hidden = !macHost;
     if (focusButton) focusButton.hidden = !webShell;
     languageToggle.addEventListener('click', () => {
+      if (macLocalization) {
+        const rect = languageToggle.getBoundingClientRect();
+        languageToggle.setAttribute('aria-expanded', 'true');
+        bridge().postMessage({ type: 'choose-language', anchor: { x: rect.left, y: rect.bottom } });
+        return;
+      }
       const language = state.language === 'zh' ? 'en' : 'zh';
       setLanguage(language);
       bridge()?.postMessage({ type: 'language-preference', language });
+    });
+    languageToggle.addEventListener('keydown', (event) => {
+      if (!macLocalization || !['ArrowDown', 'ArrowUp'].includes(event.key)) return;
+      event.preventDefault();
+      languageToggle.click();
     });
     websiteLink.addEventListener('click', () => bridge()?.postMessage({ type: 'open-external', destination: 'website' }));
     githubLink.addEventListener('click', () => bridge()?.postMessage({ type: 'open-external', destination: 'github' }));
@@ -2481,6 +2595,8 @@
       prepareMaskDownload,
       undo,
       setLanguage,
+      setLanguagePreferenceFromNative,
+      closeLanguageMenu,
       setFocusState,
       clearRegions,
       snapshot
