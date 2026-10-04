@@ -25,7 +25,8 @@ async function createSyntheticImages(directory) {
 
 test('Mac WK/AppKit 本地化界面保持任务与输出，隔离偏好和剪贴板', { skip: process.platform !== 'darwin' }, async () => {
   const { stdout: disk } = await run('/bin/df', ['-k', '/System/Volumes/Data']);
-  assert.ok(Number(disk.trim().split('\n').at(-1).trim().split(/\s+/)[3]) >= 80 * 1024 * 1024, '80 GiB required before native UI build');
+  // Protects contributors' disks; hosted CI runners are disposable and smaller.
+  if (!process.env.CI) assert.ok(Number(disk.trim().split('\n').at(-1).trim().split(/\s+/)[3]) >= 80 * 1024 * 1024, '80 GiB required before native UI build');
   const temporaryRoot = path.join(root, '.derivedData');
   fs.mkdirSync(temporaryRoot, { recursive: true });
   const directory = fs.mkdtempSync(path.join(temporaryRoot, 'localization-ui-'));
