@@ -2695,6 +2695,20 @@ final class FlashMaskSettingsController: NSObject, NSWindowDelegate {
         frame.origin.y = top - frame.height
         window.setFrame(frame, display: true)
     }
+
+    func center(over parent: NSWindow?) {
+        guard let parent, let visible = (parent.screen ?? NSScreen.main)?.visibleFrame else {
+            window.center()
+            return
+        }
+        let size = window.frame.size
+        let x = (parent.frame.midX - size.width / 2).rounded()
+        let y = (parent.frame.midY - size.height / 2).rounded()
+        window.setFrameOrigin(NSPoint(
+            x: min(max(x, visible.minX), visible.maxX - size.width),
+            y: min(max(y, visible.minY), visible.maxY - size.height)
+        ))
+    }
 }
 
 final class FlashMaskAppDelegate: NSObject, NSApplicationDelegate {
@@ -2789,12 +2803,14 @@ final class FlashMaskAppDelegate: NSObject, NSApplicationDelegate {
     func presentSettings(focusLanguage: Bool, startCheck: Bool) {
         let settings = ensureSettingsController()
         settings.restoreWindow = window
+        let wasVisible = settings.window.isVisible
+        reloadSettingsCopy()
+        // Attaching a child window orders it in, so place it first.
+        if !wasVisible {
+            settings.center(over: window)
+        }
         if let window, settings.window.parent == nil {
             window.addChildWindow(settings.window, ordered: .above)
-        }
-        reloadSettingsCopy()
-        if !settings.window.isVisible {
-            settings.window.center()
         }
         settings.window.makeKeyAndOrderFront(nil)
         if focusLanguage {
