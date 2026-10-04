@@ -26,6 +26,7 @@ Flash Mask 是一款专为 AI 图像编辑与视觉工作流打造的轻量 macO
 
 - 直接从剪贴板粘贴截图。
 - 为整张图片填写说明，也可以为各个区域添加说明。
+- 界面支持七种语言：英文、简体中文、繁体中文、日语、德语、法语和西班牙语。
 - 在独立设置窗口中切换语言、检查更新，并打开官网、帮助、GitHub 源码或支持页。
 
 Flash Mask 省去了在大型图像软件中繁琐套索、填充和导出图层的步骤，在几秒内将你的圈选转化为 Agent 可直接解析的坐标数据：
@@ -113,14 +114,14 @@ Flash Mask 输出带版本标识、自解释的标准 JSON 数据，内置像素
 - **双坐标系输出**：兼具绝对像素坐标与分辨率无关的归一化坐标，适配不同 Agent 与模型接口。
 - **原图尺寸保真**：导出的黑白 PNG 蒙版严格与原图宽高 1:1 对应，选区纯白、背景纯黑、无羽化。
 - **本地路径直达**：Mac 端复制的 JSON 包含验证后的本地文件绝对路径，方便本地自动化脚本与 Agent 直接定位文件。
-- **中英双语界面**：提供完整中文与英文界面，一键无缝切换。
+- **七种界面语言**：英文、简体中文、繁体中文、日语、德语、法语和西班牙语。默认跟随系统语言，也可随时从顶栏语言菜单或设置中切换，当前图片、选区和说明不受影响。
 - **隐私与离线优先**：纯本地运行，无需账号登录，无任何广告或分析追踪 SDK。
 
 ## 获取 Flash Mask
 
 - **Mac App Store**：在 [Mac App Store](https://apps.apple.com/cn/app/flash-mask/id6803817818?mt=12) 获取官方预编译版本。一次性买断，终身可用，无任何订阅或应用内购买。
 - **官方网站**：访问 [flashmask.net](https://flashmask.net/) 了解产品动态与体验说明。
-- **源码 Release**：在 [GitHub Releases](https://github.com/sudoHG/FlashMask/releases/tag/v1.0.0) 获取源码归档。（注：官方二进制安装包统一通过 Mac App Store 分发，GitHub Releases 不附加预编译安装包）。
+- **源码 Release**：在 [GitHub Releases](https://github.com/sudoHG/FlashMask/releases) 获取源码归档。（注：官方二进制安装包统一通过 Mac App Store 分发，GitHub Releases 不附加预编译安装包）。
 
 ## 本仓库开源范围
 
@@ -170,10 +171,10 @@ xcodebuild \
 
 ```sh
 ./build.sh
-./build.sh --version 1.3 --build-number 8 --dmg
+./build.sh --version 1.3.1 --build-number 9 --dmg
 ```
 
-脚本默认版本为 `1.2`、构建号为 `7`；可用 `--version` 和 `--build-number` 覆盖。它会检查构建产物的版本、最低 macOS 版本和两种架构。`--dmg` 会把无签名 App 打包为本地测试 DMG，该 DMG 不适合通过 Gatekeeper 分发。
+脚本默认版本为 `1.3`、构建号为 `8`；可用 `--version` 和 `--build-number` 覆盖。它会检查构建产物的版本、最低 macOS 版本和两种架构。`--dmg` 会把无签名 App 打包为本地测试 DMG，该 DMG 不适合通过 Gatekeeper 分发。
 
 若要在 Mac App Store 之外分发，请先使用自己的 **Developer ID Application** 身份和安全时间戳签名，验证代码签名后提交公证；Apple 接受后钉附并验证公证票据。随后用以下命令打包同一个 App：
 
@@ -198,6 +199,9 @@ npm test
 - 多边形几何计算与套索选区顶点清洗（平滑与去冗余）
 - 1:1 黑白 PNG 蒙版栅格化像素渲染准确性
 - 性能边界与顶点数量限制保护
+- 本地化资源：七种语言的键、占位符和成对的 Bundle 资源保持一致
+
+在 macOS 上运行 `npm test` 还会编译并运行原生 Swift 测试（本地化资源与设置窗口位置），期间会短暂打开测试窗口。原生界面测试需单独运行 `node --test tests/mac-localization-ui.js`。CI 在 Linux 上运行核心测试，并在 Apple Silicon macOS 15、Intel 和 macOS 14 上运行原生测试与界面测试，详见[贡献指南](贡献指南.md)。
 
 ## 目录结构
 
@@ -205,6 +209,8 @@ npm test
 |---|---|
 | `index.html` | Mac App 内嵌编辑界面、画布交互控制与 UI 状态机 |
 | `src/` | 坐标合同协议解析、蒙版栅格化与套索选区清洗算法 |
+| `src/localizations/` | 七种语言的界面文案，每种语言一个 JSON 文件 |
+| `scripts/` | 构建时校验并打包成对本地化资源的脚本 |
 | `schemas/` | Flash Mask 1.0 与 1.1 坐标数据合同的官方 JSON Schema 定义 |
 | `macos/` | AppKit / WKWebView 原生宿主包装、安全作用域文件访问与 Xcode 工程 |
 | `tests/` | 核心单元测试、契约测试与验证用例 |
