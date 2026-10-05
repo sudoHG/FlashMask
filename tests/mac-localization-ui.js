@@ -53,7 +53,7 @@ test('Mac WK/AppKit 本地化界面保持任务与输出，隔离偏好和剪贴
       fs.copyFileSync(path.join(root, file), path.join(resources, file));
     }
     fs.copyFileSync(path.join(root, 'macos', 'FlashMask.icns'), path.join(resources, 'FlashMask.icns'));
-    await run('/usr/bin/xcrun', ['swiftc', '-parse-as-library', '-target', `${process.arch === 'arm64' ? 'arm64' : 'x86_64'}-apple-macosx13.0`, '-module-cache-path', path.join(directory, 'module-cache'), '-framework', 'AppKit', '-framework', 'WebKit', '-framework', 'StoreKit', path.join(root, 'macos', 'App.swift'), path.join(root, 'tests', 'mac-localization-ui.swift'), '-o', executable], { timeout: 60000, maxBuffer: 2 * 1024 * 1024 });
+    await run('/usr/bin/xcrun', ['swiftc', '-parse-as-library', '-target', `${process.arch === 'arm64' ? 'arm64' : 'x86_64'}-apple-macosx13.0`, '-module-cache-path', path.join(directory, 'module-cache'), '-framework', 'AppKit', '-framework', 'WebKit', '-framework', 'StoreKit', path.join(root, 'macos', 'App.swift'), path.join(root, 'tests', 'mac-localization-ui.swift'), '-o', executable], { timeout: 180000, maxBuffer: 2 * 1024 * 1024 });
     await run('/usr/bin/codesign', ['--force', '--sign', '-', bundle]);
     const args = [fixtures, screenshots];
     const emptyOnly = process.env.FLASH_MASK_LOCALIZATION_EMPTY_ONLY === '1';

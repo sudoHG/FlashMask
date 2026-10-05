@@ -25,7 +25,7 @@ test('设置窗口居中在主窗口上，并完整显示在屏幕可见区域�
       '-framework', 'AppKit', '-framework', 'WebKit', '-framework', 'StoreKit',
       path.join(root, 'macos', 'App.swift'), path.join(root, 'tests', 'mac-settings-window.swift'),
       '-o', executable
-    ], { timeout: 60000, maxBuffer: 2 * 1024 * 1024 });
+    ], { timeout: 180000, maxBuffer: 2 * 1024 * 1024 });
     const { stdout } = await run(executable, [], { timeout: 10000 }).catch(error => {
       assert.fail(error.stdout || error.stderr || error.message);
     });
