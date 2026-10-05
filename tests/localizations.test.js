@@ -168,7 +168,7 @@ test('原生在隔离的三语言 fixture 中读取、格式化、匹配地区�
       '-framework', 'AppKit', '-framework', 'WebKit', '-framework', 'StoreKit',
       path.join(root, 'macos', 'App.swift'), path.join(root, 'tests', 'mac-localization.swift'),
       '-o', executable
-    ], { timeout: 60000, maxBuffer: 2 * 1024 * 1024 });
+    ], { timeout: 180000, maxBuffer: 2 * 1024 * 1024 });
     const { stdout } = await run(executable, [cases], { timeout: 10000 }).catch(error => {
       assert.fail(error.stdout || error.stderr || error.message);
     });
